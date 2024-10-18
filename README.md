@@ -1,4 +1,4 @@
-# map_uk_schools
+# Map UK Schools
 
 Use UK government data to filter and plot UK schools, filtering by GCSE results.
 
@@ -25,6 +25,6 @@ The script requires several packages:
     
 The GOOGLE_MAPS_API_KEY OS environment variable must be properly set to your Google Maps API key.
 
-Simply run the Python script, it will look for an input CSV file named `code` 2022-2023_england_ks5final.csv `code` and produce two output files: `code` processed_school_data.csv `code` (the filtered school data) and `code` schools_map.html `code` (the actual map).
+Simply run the Python script, it will look for an input CSV file named `2022-2023_england_ks5final.csv` and produce two output files: `processed_school_data.csv` (the filtered school data) and `schools_map.html` (the actual map).
 
 You can change the filtering of which schools to add (out of the 2973 total in England) at lines 79-89.
