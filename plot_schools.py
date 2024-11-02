@@ -5,6 +5,10 @@ import googlemaps
 from tqdm import tqdm
 import folium
 from folium.features import DivIcon
+import boto3
+import pandas as pd
+from botocore.exceptions import ClientError
+
 
 # Replace with your actual Google Maps API key
 GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY')
@@ -42,10 +46,10 @@ def point_score_to_grade(point_score):
         return 'D'
     else:
         return 'E'
-    
 
-# Function to geocode an address
-def geocode_address(gmaps, address):
+
+# Function to geocode an address (old)
+def geocode_address_google(gmaps, address):
     try:
         result = gmaps.geocode(address)
         if result:
@@ -54,6 +58,55 @@ def geocode_address(gmaps, address):
     except Exception as e:
         print(f"Error geocoding {address}: {e}")
     return pd.Series({'Latitude': None, 'Longitude': None})
+
+# Function to geocode an address
+def geocode_address(address, index_name="your-place-index-name", region_name="eu-west-2"):
+    """
+    Geocode an address using Amazon Location Services.
+
+    Parameters:
+    address (str): The address to geocode
+    index_name (str): The name of your Place Index resource in Amazon Location Services
+    region_name (str): AWS region where your Place Index is located
+
+    Returns:
+    pandas.Series: Contains 'Latitude' and 'Longitude' values, or None if geocoding fails
+    """
+    try:
+        # Initialize the Amazon Location Service client
+        location_client = boto3.client(
+            'location',
+            region_name=region_name
+        )
+
+        # Call the search-place-index-for-text operation
+        response = location_client.search_place_index_for_text(
+            IndexName=index_name,
+            Text=address,
+            MaxResults=1
+        )
+
+        # Check if we got results
+        if response['Results']:
+            # Extract coordinates (note: AWS returns [longitude, latitude])
+            coordinates = response['Results'][0]['Place']['Geometry']['Point']
+            return pd.Series({
+                'Latitude': coordinates[1],  # AWS returns [lng, lat]
+                'Longitude': coordinates[0]
+            })
+
+        return pd.Series({'Latitude': None, 'Longitude': None})
+
+    except ClientError as e:
+        error_code = e.response['Error']['Code']
+        error_message = e.response['Error']['Message']
+        print(f"AWS Error geocoding {address}: {error_code} - {error_message}")
+        return pd.Series({'Latitude': None, 'Longitude': None})
+
+    except Exception as e:
+        print(f"Error geocoding {address}: {e}")
+        return pd.Series({'Latitude': None, 'Longitude': None})
+
 
 # Main script
 def main():
@@ -83,10 +136,10 @@ def main():
     # Print the number of schools after filtering
     print(f"Number of schools with lower age range < 8: {len(df_selected)}")
 
-    # Filter to include the 70th percentile of TB3PTSE
-    df_selected = df_selected[df_selected['TB3PTSE'] >= df_selected['TB3PTSE'].quantile(0.70)]
+    # Filter to include the 50th percentile of TB3PTSE
+    df_selected = df_selected[df_selected['TB3PTSE'] >= df_selected['TB3PTSE'].quantile(0.50)]
 
-    print(f"Number of schools in P70: {len(df_selected)}")
+    print(f"Number of schools in P50: {len(df_selected)}")
 
     # calculate the grades
     df_selected['TB3PTSE_Grade'] = df_selected['TB3PTSE'].apply(point_score_to_grade)
@@ -102,7 +155,8 @@ def main():
     # Iterate over the rows and geocode
     for _, row in df_selected.iterrows():
         address = f"{row['ADDRESS1']}, {row['TOWN']}, {row['PCODE']}"
-        lat, lon = geocode_address(gmaps, address)
+#        lat, lon = geocode_address(gmaps, address)
+        lat, lon = geocode_address(address)
         print(f"Processed: {address}")
         latitudes.append(lat)
         longitudes.append(lon)
@@ -166,15 +220,15 @@ def main():
                 html=f'''
                     <div style="width: 30px; height: 30px;">
                         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 0C7.58 0 4 3.58 4 8c0 5.76 8 16 8 16s8-10.24 8-16c0-4.42-3.58-8-8-8z" 
-                                fill="{colour}" 
-                                stroke="black" 
+                            <path d="M12 0C7.58 0 4 3.58 4 8c0 5.76 8 16 8 16s8-10.24 8-16c0-4.42-3.58-8-8-8z"
+                                fill="{colour}"
+                                stroke="black"
                                 stroke-width="1"/>
                             <text x="12" y="9" font-family="Arial" font-size="8" font-weight="bold" fill="{fontcolour}" text-anchor="middle" dy=".3em">{int(row["Rank"])}</text>
                         </svg>
                     </div>
                 '''
-            ) 
+            )
             marker = folium.Marker(
                 [row['Latitude'], row['Longitude']],
                 popup=folium.Popup(popup_html, max_width=300),
