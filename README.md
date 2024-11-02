@@ -23,7 +23,7 @@ The script requires several packages:
     pip install tqdm
     pip install folium
     
-The GOOGLE_MAPS_API_KEY OS environment variable must be properly set to your Google Maps API key.
+No longer uses Google Maps API, now uses Amazon Location Services.  AWS credentials must be set properly (via ```aws configure```)
 
 Simply run the Python script, it will look for an input CSV file named `2022-2023_england_ks5final.csv` and produce two output files: `processed_school_data.csv` (the filtered school data) and `schools_map.html` (the actual map).
 
