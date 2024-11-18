@@ -9,20 +9,8 @@ import boto3
 import pandas as pd
 from botocore.exceptions import ClientError
 
-
 # Replace with your actual Google Maps API key
 GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY')
-
-
-# data is from here (we cannot fetch it with wget or programmatically, need to use browser)
-# https://www.compare-school-performance.service.gov.uk/download-data
-#
-# select 2022-2023
-# select all of England
-# select 16-18 results (final)
-# select CSV format
-#
-# https://www.compare-school-performance.service.gov.uk/download-data?download=true&regions=0&filters=KS5&fileformat=csv&year=2022-2023&meta=false
 
 # Function to decode the AGERANGE column
 def extract_lower_age(age_range):
@@ -46,7 +34,6 @@ def point_score_to_grade(point_score):
         return 'D'
     else:
         return 'E'
-
 
 # Function to geocode an address (old)
 def geocode_address_google(gmaps, address):
@@ -108,6 +95,56 @@ def geocode_address(address, index_name="your-place-index-name", region_name="eu
         return pd.Series({'Latitude': None, 'Longitude': None})
 
 
+def get_grade_color(score, is_independent):
+    """
+    Returns a distinctive color based on grade bracket and school type
+    """
+    # Independent schools use warm colors
+    if is_independent:
+        if score >= 50:  # A*
+            return '#FF0000'  # Red
+        elif score >= 40:  # A
+            return '#FFA500'  # Orange
+        elif score >= 30:  # B
+            return '#FFD700'  # Gold
+        elif score >= 20:  # C
+            return '#FFFF00'  # Yellow
+        elif score >= 10:  # D
+            return '#F4C430'  # Saffron
+        else:  # E or below
+            return '#DEB887'  # Burlywood
+    # State schools use cool colors
+    else:
+        if score >= 50:  # A*
+            return '#000080'  # Navy
+        elif score >= 40:  # A
+            return '#0000FF'  # Blue
+        elif score >= 30:  # B
+            return '#4169E1'  # Royal Blue
+        elif score >= 20:  # C
+            return '#87CEEB'  # Sky Blue
+        elif score >= 10:  # D
+            return '#B0E0E6'  # Powder Blue
+        else:  # E or below
+            return '#F0F8FF'  # Alice Blue
+
+def get_text_color(background_color):
+    """
+    Returns appropriate text color (black or white) based on background color brightness
+    """
+    # Convert hex to RGB
+    bg_color = background_color.lstrip('#')
+    rgb = tuple(int(bg_color[i:i+2], 16) for i in (0, 2, 4))
+    
+    # Calculate perceived brightness
+    brightness = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000
+    
+    # Return white for dark backgrounds, black for light backgrounds
+    return '#000000' if brightness > 128 else '#FFFFFF'
+
+ 
+
+ 
 # Main script
 def main():
     # Download the CSV file
@@ -155,7 +192,6 @@ def main():
     # Iterate over the rows and geocode
     for _, row in df_selected.iterrows():
         address = f"{row['ADDRESS1']}, {row['TOWN']}, {row['PCODE']}"
-#        lat, lon = geocode_address(gmaps, address)
         lat, lon = geocode_address(address)
         print(f"Processed: {address}")
         latitudes.append(lat)
@@ -173,8 +209,8 @@ def main():
     df_selected.sort_values(by='TB3PTSE', ascending=False).to_csv(output_csv, index=False)
     print(f"Saved processed data to {output_csv}")
 
-    # Create a map using folium, centered on Tower Bridge, London
-    m = folium.Map(location=[51.5055, -0.0754], zoom_start=10)  # Centered on Tower Bridge, London
+   # Create a map using folium, centered on Tower Bridge, London
+    m = folium.Map(location=[51.5055, -0.0754], zoom_start=10)
 
     # Add a title to the map
     title_html = '''
@@ -184,24 +220,69 @@ def main():
                 '''
     m.get_root().html.add_child(folium.Element(title_html))
 
+    # Add legend with discrete colors
+    legend_html = '''
+    <div style="position: fixed; 
+                bottom: 50px; right: 50px; width: 200px;
+                border:2px solid grey; z-index:9999; font-size:14px;
+                background-color:white;
+                padding: 10px;
+                border-radius: 5px;
+                ">
+        <div style="font-weight: bold; margin-bottom: 10px;">Independent Schools</div>
+        <div style="margin-bottom: 5px;">
+            <span style="display:inline-block; width: 12px; height: 12px; background-color: #FF0000; margin-right: 5px;"></span>A* (≥50)
+        </div>
+        <div style="margin-bottom: 5px;">
+            <span style="display:inline-block; width: 12px; height: 12px; background-color: #FFA500; margin-right: 5px;"></span>A (40-49)
+        </div>
+        <div style="margin-bottom: 5px;">
+            <span style="display:inline-block; width: 12px; height: 12px; background-color: #FFD700; margin-right: 5px;"></span>B (30-39)
+        </div>
+        <div style="margin-bottom: 5px;">
+            <span style="display:inline-block; width: 12px; height: 12px; background-color: #FFFF00; margin-right: 5px;"></span>C (20-29)
+        </div>
+        <div style="margin-bottom: 5px;">
+            <span style="display:inline-block; width: 12px; height: 12px; background-color: #F4C430; margin-right: 5px;"></span>D (10-19)
+        </div>
+        <div style="margin-bottom: 15px;">
+            <span style="display:inline-block; width: 12px; height: 12px; background-color: #DEB887; margin-right: 5px;"></span>E (<10)
+        </div>
+        <div style="font-weight: bold; margin-bottom: 10px;">State Schools</div>
+        <div style="margin-bottom: 5px;">
+            <span style="display:inline-block; width: 12px; height: 12px; background-color: #000080; margin-right: 5px;"></span>A* (≥50)
+        </div>
+        <div style="margin-bottom: 5px;">
+            <span style="display:inline-block; width: 12px; height: 12px; background-color: #0000FF; margin-right: 5px;"></span>A (40-49)
+        </div>
+        <div style="margin-bottom: 5px;">
+            <span style="display:inline-block; width: 12px; height: 12px; background-color: #4169E1; margin-right: 5px;"></span>B (30-39)
+        </div>
+        <div style="margin-bottom: 5px;">
+            <span style="display:inline-block; width: 12px; height: 12px; background-color: #87CEEB; margin-right: 5px;"></span>C (20-29)
+        </div>
+        <div style="margin-bottom: 5px;">
+            <span style="display:inline-block; width: 12px; height: 12px; background-color: #B0E0E6; margin-right: 5px;"></span>D (10-19)
+        </div>
+        <div>
+            <span style="display:inline-block; width: 12px; height: 12px; background-color: #F0F8FF; margin-right: 5px;"></span>E (<10)
+        </div>
+    </div>
+    '''
+    m.get_root().html.add_child(folium.Element(legend_html))
+
     for _, row in df_selected.iterrows():
-        if pd.isna(row['ADMPOL_PT']) or row['ADMPOL_PT'].strip() == '':
-            colour = '#85bb65'  # the colour of money according to Claude
-            fontcolour = 'black'
-            admpol = 'independent'
-        else:
-            colour = '#0000FF'  # blue in hex
-            fontcolour = 'white'
-            admpol = row['ADMPOL_PT']
+        is_independent = pd.isna(row['ADMPOL_PT']) or row['ADMPOL_PT'].strip() == ''
+        colour = get_grade_color(row['TB3PTSE'], is_independent)
+        fontcolour = get_text_color(colour)
+        admpol = 'independent' if is_independent else row['ADMPOL_PT']
 
         if pd.notna(row['Latitude']) and pd.notna(row['Longitude']):
-            # Create a list of non-empty address components
+            # Create address string
             address_parts = [str(row[field]) for field in ['ADDRESS1', 'TOWN', 'PCODE'] if pd.notna(row[field]) and str(row[field]).strip()]
-            # Join the non-empty parts with commas
             address_string = ', '.join(address_parts)
 
             popup_html = f"""
-            <b>Rank: {int(row['Rank'])}</b><br>
             <b>{row['SCHNAME']}</b><br>
             {address_string}<br>
             Phone: {row['TELNUM']}<br>
@@ -213,7 +294,7 @@ def main():
             Avg per A-level (TALLPPE_ALEV_1618): {row['TALLPPE_ALEV_1618']:.2f} (<b>{row['TALLPPE_ALEV_1618_Grade']}</b>)
             """
 
-            # Create a custom icon with the marker shape and rank number
+            # Create a custom icon with rounded TB3PTSE score
             icon = DivIcon(
                 icon_size=(30, 30),
                 icon_anchor=(15, 30),
@@ -224,11 +305,12 @@ def main():
                                 fill="{colour}"
                                 stroke="black"
                                 stroke-width="1"/>
-                            <text x="12" y="9" font-family="Arial" font-size="8" font-weight="bold" fill="{fontcolour}" text-anchor="middle" dy=".3em">{int(row["Rank"])}</text>
+                            <text x="12" y="9" font-family="Arial" font-size="8" font-weight="bold" fill="{fontcolour}" text-anchor="middle" dy=".3em">{round(row['TB3PTSE'])}</text>
                         </svg>
                     </div>
                 '''
             )
+            
             marker = folium.Marker(
                 [row['Latitude'], row['Longitude']],
                 popup=folium.Popup(popup_html, max_width=300),
@@ -237,15 +319,11 @@ def main():
 
             marker.add_to(m)
 
-            #folium.Marker(
-            #    [row['Latitude'], row['Longitude']],
-            #    popup=folium.Popup(popup_html, max_width=300),
-            #    icon=folium.Icon(color=colour)
-            #).add_to(m)
-
     # Save the map
     m.save("schools_map.html")
     print("Map saved as schools_map.html")
 
 if __name__ == "__main__":
     main()
+
+
