@@ -19,11 +19,11 @@ https://www.compare-school-performance.service.gov.uk/download-data?download=tru
 The script requires several packages:
 
     pip install pandas
-    pip install googlemaps
+    pip install boto3
     pip install tqdm
     pip install folium
     
-No longer uses Google Maps API, now uses Amazon Location Services.  AWS credentials must be set properly (via ```aws configure```)
+Uses Amazon Location Services for latitude/longitude lookup and address normalisation.  AWS credentials must be set properly (via ```aws configure```)
 
 Simply run the Python script, it will look for an input CSV file named `2022-2023_england_ks5final.csv` and produce two output files: `processed_school_data.csv` (the filtered school data) and `schools_map.html` (the actual map).
 
