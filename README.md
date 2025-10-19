@@ -4,6 +4,8 @@ Use UK government data to filter and plot UK schools, filtering by A-level resul
 
 **[View the interactive map →](http://web.andico.org/schools_map.html)**
 
+![Schools Map Screenshot](schools_map.png)
+
 ## Data Sources
 
 ### School Performance Data
