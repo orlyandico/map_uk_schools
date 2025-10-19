@@ -28,6 +28,54 @@ CRIME_DATA_FILE = "combined_crimes.csv.gz"
 geocoding_cache = {}
 CACHE_FILE = "geocoding_cache.json"
 
+# Crime cache
+crime_cache = {}
+CRIME_CACHE_FILE = "crime_cache.json"
+
+def load_crime_cache():
+    """Load crime cache from file if it exists and is valid"""
+    global crime_cache
+    if not os.path.exists(CRIME_CACHE_FILE) or not os.path.exists(CRIME_DATA_FILE):
+        crime_cache = {}
+        return
+    
+    try:
+        with open(CRIME_CACHE_FILE, 'r') as f:
+            cache_data = json.load(f)
+        
+        # Check if crime file has changed
+        crime_stat = os.stat(CRIME_DATA_FILE)
+        cache_meta = cache_data.get('_metadata', {})
+        
+        if (cache_meta.get('file_size') == crime_stat.st_size and 
+            cache_meta.get('file_mtime') == crime_stat.st_mtime):
+            crime_cache = {k: v for k, v in cache_data.items() if not k.startswith('_')}
+            print(f"Loaded {len(crime_cache)} cached crime calculations")
+        else:
+            print("Crime file changed, invalidating cache")
+            crime_cache = {}
+    except Exception as e:
+        print(f"Error loading crime cache: {e}")
+        crime_cache = {}
+
+def save_crime_cache():
+    """Save crime cache to file with metadata"""
+    try:
+        cache_data = dict(crime_cache)
+        if os.path.exists(CRIME_DATA_FILE):
+            crime_stat = os.stat(CRIME_DATA_FILE)
+            cache_data['_metadata'] = {
+                'file_size': crime_stat.st_size,
+                'file_mtime': crime_stat.st_mtime,
+                'cached_at': pd.Timestamp.now().isoformat()
+            }
+        
+        with open(CRIME_CACHE_FILE, 'w') as f:
+            json.dump(cache_data, f, indent=2)
+        print(f"Saved {len(crime_cache)} crime calculations to cache")
+    except Exception as e:
+        print(f"Error saving crime cache: {e}")
+
 def load_geocoding_cache():
     """Load geocoding cache from file if it exists"""
     global geocoding_cache
@@ -89,21 +137,30 @@ def reverse_geocode_location(lat, lon, index_name="your-place-index-name", regio
         return None
 
 def geocode_address(address, index_name="your-place-index-name", region_name="eu-west-2",
-                   pbar=None, hits_counter=None, misses_counter=None):
+                   pbar=None, hits_counter=None, misses_counter=None, crime_df=None):
     """Geocode address using Amazon Location Services with caching"""
     if not address or pd.isna(address):
         if pbar:
             pbar.update(1)
-        return pd.Series({'Latitude': None, 'Longitude': None})
+        return pd.Series({'Latitude': None, 'Longitude': None, 'crime_stats': None})
 
     # Check cache first
     if address in geocoding_cache:
         lat, lon = geocoding_cache[address]
+        
+        # Check if we have crime data cached for this location
+        crime_cache_key = f"{lat:.6f},{lon:.6f},{SCHOOL_CRIME_RADIUS_KM}" if lat else None
+        crime_stats = crime_cache.get(crime_cache_key) if crime_cache_key else None
+        
+        # If no crime stats cached but we have coordinates and crime_df, calculate now
+        if lat and crime_df is not None and not crime_stats:
+            crime_stats = get_crime_stats_for_location(lat, lon, SCHOOL_CRIME_RADIUS_KM, crime_df)
+        
         if pbar:
             pbar.set_postfix(cache_hits=hits_counter[0], cache_misses=misses_counter[0])
             hits_counter[0] += 1
             pbar.update(1)
-        return pd.Series({'Latitude': lat, 'Longitude': lon})
+        return pd.Series({'Latitude': lat, 'Longitude': lon, 'crime_stats': crime_stats})
 
     try:
         if pbar:
@@ -119,28 +176,35 @@ def geocode_address(address, index_name="your-place-index-name", region_name="eu
 
         if response['Results']:
             coordinates = response['Results'][0]['Place']['Geometry']['Point']
+            lat, lon = coordinates[1], coordinates[0]
+            
+            # Calculate crime stats if crime_df is available
+            crime_stats = None
+            if crime_df is not None:
+                crime_stats = get_crime_stats_for_location(lat, lon, SCHOOL_CRIME_RADIUS_KM, crime_df)
+            
             # Store in cache
-            geocoding_cache[address] = (coordinates[1], coordinates[0])
+            geocoding_cache[address] = (lat, lon)
             if pbar:
                 pbar.update(1)
-            return pd.Series({'Latitude': coordinates[1], 'Longitude': coordinates[0]})
+            return pd.Series({'Latitude': lat, 'Longitude': lon, 'crime_stats': crime_stats})
 
         # Cache negative results
         geocoding_cache[address] = (None, None)
         if pbar:
             pbar.update(1)
-        return pd.Series({'Latitude': None, 'Longitude': None})
+        return pd.Series({'Latitude': None, 'Longitude': None, 'crime_stats': None})
 
     except ClientError as e:
         print(f"AWS Error geocoding {address}: {e.response['Error']['Code']} - {e.response['Error']['Message']}")
         if pbar:
             pbar.update(1)
-        return pd.Series({'Latitude': None, 'Longitude': None})
+        return pd.Series({'Latitude': None, 'Longitude': None, 'crime_stats': None})
     except Exception as e:
         print(f"Error geocoding {address}: {e}")
         if pbar:
             pbar.update(1)
-        return pd.Series({'Latitude': None, 'Longitude': None})
+        return pd.Series({'Latitude': None, 'Longitude': None, 'crime_stats': None})
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     """Calculate the great circle distance between two points in kilometers"""
@@ -166,11 +230,20 @@ def calculate_circle_bounding_box(center_lat, center_lon, radius_km):
 
 def get_crime_stats_for_location(center_lat, center_lon, radius_km, crime_df=None):
     """Get crime statistics for a location within specified radius"""
+    # Create cache key
+    cache_key = f"{center_lat:.6f},{center_lon:.6f},{radius_km}"
+    
+    # Check cache first
+    if cache_key in crime_cache:
+        return crime_cache[cache_key]
+    
     if crime_df is None:
         try:
             crime_df = pd.read_csv(CRIME_DATA_FILE)
         except FileNotFoundError:
-            return {'total_crimes': 0, 'crime_types': {}, 'error': 'No crime data available'}
+            result = {'total_crimes': 0, 'crime_types': {}, 'error': 'No crime data available'}
+            crime_cache[cache_key] = result
+            return result
 
     # Filter out low-impact crimes
     excluded_crimes = {
@@ -190,7 +263,9 @@ def get_crime_stats_for_location(center_lat, center_lon, radius_km, crime_df=Non
     ]
 
     if len(bbox_filtered) == 0:
-        return {'total_crimes': 0, 'crime_types': {}, 'radius_km': radius_km}
+        result = {'total_crimes': 0, 'crime_types': {}, 'radius_km': radius_km}
+        crime_cache[cache_key] = result
+        return result
 
     # Calculate actual distances for remaining points
     bbox_filtered = bbox_filtered.copy()
@@ -206,11 +281,15 @@ def get_crime_stats_for_location(center_lat, center_lon, radius_km, crime_df=Non
     total_crimes = len(final_filtered)
     crime_types = final_filtered['Crime type'].value_counts().to_dict() if total_crimes > 0 else {}
 
-    return {
+    result = {
         'total_crimes': total_crimes,
         'crime_types': crime_types,
         'radius_km': radius_km
     }
+    
+    # Cache the result
+    crime_cache[cache_key] = result
+    return result
 
 def format_crime_stats(crime_stats, crime_index=None):
     """Format crime statistics for display in popup"""
@@ -334,20 +413,9 @@ def cluster_schools(df, max_distance_km, min_schools=2):
     # Assign schools to clusters
     labels = np.full(len(df_reset), -1)
 
-    for school_idx, school_row in df_reset.iterrows():
-        min_distance = float('inf')
-        best_cluster = -1
-
-        for cluster_id, center in enumerate(final_centers):
-            distance = geodesic(
-                (center['lat'], center['lon']),
-                (school_row['Latitude'], school_row['Longitude'])
-            ).km
-            if distance <= max_distance_km and distance < min_distance:
-                min_distance = distance
-                best_cluster = cluster_id
-
-        labels[school_idx] = best_cluster
+    for cluster_id, center in enumerate(final_centers):
+        for school_idx in center['schools']:
+            labels[school_idx] = cluster_id
 
     # Calculate geographic centroids for final cluster centers
     print("Calculating geographic centroids for each cluster...")
@@ -505,6 +573,9 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
     """Main function to process schools and create map"""
     # Load geocoding cache
     load_geocoding_cache()
+    
+    # Load crime cache
+    load_crime_cache()
 
     # Load crime data
     print("Loading crime data...")
@@ -562,12 +633,13 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
     for col in numeric_columns:
         df_selected[col] = pd.to_numeric(df_selected[col], errors='coerce').fillna(0)
 
-    # Calculate average scores per school across all years
-    school_groups = df_selected.groupby('SCHNAME')
+    # Calculate average scores per school across all years (group by address+postcode)
+    df_selected['school_key'] = df_selected['ADDRESS1'].astype(str) + '|' + df_selected['PCODE'].astype(str)
+    school_groups = df_selected.groupby('school_key')
 
     # Create consolidated dataframe with averages and year-specific data
     consolidated_data = []
-    for school_name, group_df in school_groups:
+    for school_key, group_df in school_groups:
         # Calculate averages (only for non-zero scores)
         valid_scores = group_df[group_df['TB3PTSE'] > 0]
         if len(valid_scores) == 0:
@@ -612,17 +684,19 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
     print(f"Geocoding {total_addresses} addresses...")
     with tqdm(total=total_addresses, desc="Geocoding", unit="address") as pbar:
         geocoded_results = df_selected['full_address'].apply(
-            lambda addr: geocode_address(addr, pbar=pbar, hits_counter=cache_hits, misses_counter=cache_misses)
+            lambda addr: geocode_address(addr, pbar=pbar, hits_counter=cache_hits, misses_counter=cache_misses, crime_df=crime_df)
         )
 
     df_selected['Latitude'] = geocoded_results['Latitude']
     df_selected['Longitude'] = geocoded_results['Longitude']
+    df_selected['crime_stats'] = geocoded_results['crime_stats']
 
     print(f"Geocoding complete - Cache hits: {cache_hits[0]} ({cache_hits[0]/total_addresses:.1%}), "
           f"Cache misses: {cache_misses[0]} ({cache_misses[0]/total_addresses:.1%})")
 
     # Save cache and remove schools without coordinates
     save_geocoding_cache()
+    save_crime_cache()
     df_selected = df_selected.dropna(subset=['Latitude', 'Longitude'])
     print(f"Schools with valid coordinates: {len(df_selected)}")
 
@@ -651,19 +725,23 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
     # Perform clustering
     labels, cluster_centers_data = cluster_schools(df_selected, cluster_radius_km, min_schools)
 
-    # Calculate crime statistics for individual schools and add to dataframe
-    print("Calculating crime statistics for individual schools...")
+    # Extract crime data from cached results
+    print("Extracting crime statistics from geocoding cache...")
     df_selected['crime_count'] = 0
     school_crime_stats = []
 
-    with tqdm(total=len(df_selected), desc="School crime analysis", unit="school") as pbar:
-        for idx, row in df_selected.iterrows():
-            crime_stats = get_crime_stats_for_location(
-                row['Latitude'], row['Longitude'], SCHOOL_CRIME_RADIUS_KM, crime_df
-            )
-            school_crime_stats.append(crime_stats)
+    for idx, row in df_selected.iterrows():
+        if row['crime_stats']:
+            crime_stats = row['crime_stats']
             df_selected.at[idx, 'crime_count'] = crime_stats['total_crimes']
-            pbar.update(1)
+            school_crime_stats.append(crime_stats)
+        else:
+            # Fallback for missing crime data
+            crime_stats = {'total_crimes': 0, 'crime_types': {}, 'radius_km': SCHOOL_CRIME_RADIUS_KM}
+            school_crime_stats.append(crime_stats)
+
+    # Save crime cache after processing
+    save_crime_cache()
 
     # Calculate crime indices using pandas native methods
     df_selected['crime_index'] = pd.qcut(
@@ -680,7 +758,8 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
             df_selected['crime_index'] = df_selected['crime_index'] * (0.9 / max_val)
 
     # Add cluster circles and center markers
-    for cluster_id, center_data in enumerate(cluster_centers_data):
+    for center_data in cluster_centers_data:
+        cluster_id = center_data['cluster_id']
         center_lat, center_lon = center_data['lat'], center_data['lon']
         cluster_size = center_data['count']
         postcode = center_data.get('postcode', 'Unknown')
@@ -759,7 +838,7 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
 
     # Print detailed cluster information
     for cluster_id, schools in clusters.items():
-        center_data = cluster_centers_data[cluster_id] if cluster_id < len(cluster_centers_data) else {}
+        center_data = next((c for c in cluster_centers_data if c['cluster_id'] == cluster_id), {})
         postcode = center_data.get('postcode', 'Unknown')
         postcode_text = f" ({postcode})" if postcode and postcode != 'Unknown' else ""
 
