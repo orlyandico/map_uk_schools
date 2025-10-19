@@ -9,15 +9,14 @@ Use UK government data to filter and plot UK schools, filtering by A-level resul
 ## Data Sources
 
 ### School Performance Data
-Download CSV files from:
-```
-https://www.compare-school-performance.service.gov.uk/download-data
+Download CSV files from https://www.compare-school-performance.service.gov.uk/download-data/:
 
 - select desired year (e.g., 2021-2022, 2022-2023, 2023-2024)
 - select all of England
 - select 16-18 results (final)
 - select CSV format
-```
+
+Note that only the 2021-2022, 2022-2023, and 2023-2024 years have the options for "16-18 results (final)" - 2024-2025 results are not yet available as of October 2025, and previous years have a different schema/format.
 
 The downloaded files will have the correct naming format. Gzip them after download:
 ```bash
