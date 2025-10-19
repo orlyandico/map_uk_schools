@@ -28,9 +28,9 @@ gzip 2023-2024_england_ks5final.csv
 Download police/crime data from https://data.police.uk/data/:
 - Select your desired time period and regions
 - Download the ZIP file and unzip it to a directory
-- Run `consolidate_crime_data.py` with the path to that directory to create `combined_crimes.csv.gz`
+- Run `consolidate_crime_data.py` with the path to that directory to create `combined_crimes.csv` and then compress it with `gzip combined_crimes.csv`
 
-This adds local crime statistics to each school's popup showing serious crimes within a 3km radius.
+This adds local crime statistics to each school's popup showing serious crimes within a 3km radius (the count of crimes and decile are included, across all crimes in the police data).
 
 ## Requirements
 
