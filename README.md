@@ -2,6 +2,8 @@
 
 Use UK government data to filter and plot UK schools, filtering by A-level results across multiple years.
 
+**[View the interactive map →](http://web.andico.org/schools_map.html)**
+
 ## Data Sources
 
 ### School Performance Data
@@ -23,7 +25,12 @@ gzip 2023-2024_england_ks5final.csv
 ```
 
 ### Crime Data (Optional)
-Download the ZIP file from https://data.police.uk/data/ and unzip it to a directory. Then run `consolidate_crime_data.py` with the path to that directory to create `combined_crimes.csv.gz`.
+Download police/crime data from https://data.police.uk/data/:
+- Select your desired time period and regions
+- Download the ZIP file and unzip it to a directory
+- Run `consolidate_crime_data.py` with the path to that directory to create `combined_crimes.csv.gz`
+
+This adds local crime statistics to each school's popup showing serious crimes within a 3km radius.
 
 ## Requirements
 
