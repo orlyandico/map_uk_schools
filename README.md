@@ -15,10 +15,15 @@ https://www.compare-school-performance.service.gov.uk/download-data
 - select CSV format
 ```
 
-Save files as `YYYY-YYYY_england_ks5final.csv.gz` (e.g., `2022-2023_england_ks5final.csv.gz`)
+The downloaded files will have the correct naming format. Gzip them after download:
+```bash
+gzip 2021-2022_england_ks5final.csv
+gzip 2022-2023_england_ks5final.csv
+gzip 2023-2024_england_ks5final.csv
+```
 
 ### Crime Data (Optional)
-Download from https://data.police.uk/data/ and save as `combined_crimes.csv.gz`. Use `consolidate_crime_data.py` to merge multiple CSV files into one.
+Download the ZIP file from https://data.police.uk/data/ and unzip it to a directory. Then run `consolidate_crime_data.py` with the path to that directory to create `combined_crimes.csv.gz`.
 
 ## Requirements
 
