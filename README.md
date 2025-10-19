@@ -32,7 +32,18 @@ Download police/crime data from https://data.police.uk/data/:
 - Download the ZIP file and unzip it to a directory
 - Run `consolidate_crime_data.py` with the path to that directory (hard-coded in the file) to create `combined_crimes.csv.gz`
 
-This adds local crime statistics to each school's popup showing serious crimes within a 3km radius (the count of crimes and decile are included, across all crimes in the police data).
+This adds local crime statistics to each school's popup showing serious crimes within a 3km radius (the count of crimes and percentile are included, across all crimes in the police data). For example, a crime index of 0.95 means the radius around that particular school address is at the 95th percentile for those crimes in the police data in England.
+
+**Crime Filtering**: Only serious crimes are counted in the safety index. The following crime types are excluded as they are considered lower-impact or less relevant to school safety:
+- Shoplifting
+- Bicycle theft  
+- Other theft
+- Other crime
+- Drugs
+- Anti-social behaviour
+- Criminal damage and arson
+
+The remaining crimes (such as burglary, robbery, violence, sexual offences, vehicle crime, etc.) are included in the crime count and percentile calculation.
 
 ## Requirements
 
