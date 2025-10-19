@@ -1,6 +1,6 @@
 # Map UK Schools
 
-Use UK government data to filter and plot UK schools, filtering by GCSE results.
+Use UK government data to filter and plot UK schools, filtering by A-level results.
 
 This Python script uses the CSV file obtained from this location:
 
