@@ -30,7 +30,7 @@ Download police/crime data from https://data.police.uk/data/:
 - Select the "Custom download tab," your desired time period and the "all forces" checkbox
 - Select the "Include crime data" and "include outcomes data" checkboxes
 - Download the ZIP file and unzip it to a directory
-- Run `consolidate_crime_data.py` with the path to that directory (hard-coded in the file) to create `combined_crimes.csv` and then compress it with `gzip combined_crimes.csv`
+- Run `consolidate_crime_data.py` with the path to that directory (hard-coded in the file) to create `combined_crimes.csv.gz`
 
 This adds local crime statistics to each school's popup showing serious crimes within a 3km radius (the count of crimes and decile are included, across all crimes in the police data).
 
