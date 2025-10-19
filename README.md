@@ -63,7 +63,7 @@ Map markers show average scores across all years. Popups display:
 - School details and contact information
 - Average scores across all available years
 - Year-by-year breakdown (each year on separate line)
-- Local crime statistics within 3km radius
+- Local crime statistics within 3km radius (with percentile-based crime index)
 
 ### consolidate_crime_data.py
 Utility script to merge multiple crime CSV files from https://data.police.uk/data/ into a single `combined_crimes.csv` file. Edit the script to set your crime data directory path.

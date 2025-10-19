@@ -718,6 +718,8 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
         </a>
         <br>
         <span style="font-size:16px">Clustered with {cluster_radius_km}km radius (min {min_schools} schools per cluster)</span>
+        <br>
+        <span style="font-size:14px">Crimes in {SCHOOL_CRIME_RADIUS_KM}km radius around school</span>
         </h3>
     '''
     m.get_root().html.add_child(folium.Element(title_html))
@@ -743,19 +745,9 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
     # Save crime cache after processing
     save_crime_cache()
 
-    # Calculate crime indices using pandas native methods
-    df_selected['crime_index'] = pd.qcut(
-        df_selected['crime_count'],
-        q=10,
-        labels=False,
-        duplicates='drop'
-    ) / 10.0
-
-    # Handle edge cases where we might have fewer than 10 unique values
-    if df_selected['crime_index'].max() < 0.9:
-        max_val = df_selected['crime_index'].max()
-        if max_val > 0:  # Avoid division by zero
-            df_selected['crime_index'] = df_selected['crime_index'] * (0.9 / max_val)
+    # Calculate crime indices using percentile ranking for better interpretability
+    crime_counts = df_selected['crime_count'].copy()
+    df_selected['crime_index'] = crime_counts.rank(pct=True)
 
     # Add cluster circles and center markers
     for center_data in cluster_centers_data:
@@ -837,7 +829,8 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
     print(f"Unclustered schools: {unclustered_count} of {len(df_selected)} ({unclustered_count/len(df_selected):.1%})")
 
     # Print detailed cluster information
-    for cluster_id, schools in clusters.items():
+    for cluster_id in sorted(clusters.keys()):
+        schools = clusters[cluster_id]
         center_data = next((c for c in cluster_centers_data if c['cluster_id'] == cluster_id), {})
         postcode = center_data.get('postcode', 'Unknown')
         postcode_text = f" ({postcode})" if postcode and postcode != 'Unknown' else ""
