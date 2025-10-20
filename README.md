@@ -31,15 +31,28 @@ gzip 2022-2023_england_ks5final.csv
 gzip 2023-2024_england_ks5final.csv
 ```
 
-### 3. Download Crime Data (Optional)
+### 3. Download and Process Crime Data (Optional)
 
-From https://data.police.uk/data/:
-- Select "Custom download", choose time period, check "all forces" and "Include crime data"
-- Extract and consolidate:
+Crime data adds local safety statistics (3km radius around each school).
 
+**Download:**
+- Visit https://data.police.uk/data/
+- Select "Custom download"
+- Choose time period (e.g., last 12 months)
+- Check "all forces" and "Include crime data"
+- Download and extract the ZIP file
+
+**Consolidate:**
 ```bash
 python3 consolidate_crime_data.py --crime-data-dir /path/to/extracted/data
 ```
+
+This script:
+- Recursively finds all crime CSV files in the extracted directory
+- Extracts columns: Month, Longitude, Latitude, Crime type
+- Excludes outcome files (not needed for statistics)
+- Combines all files into `combined_crimes.csv.gz`
+- Typical output: 5-10 million crime records → ~200MB compressed file
 
 ### 4. Configure AWS
 
@@ -92,6 +105,7 @@ aws s3 cp school_finder.html s3://your-bucket/index.html \
 ### Scripts
 
 - **`school_data_lib.py`** (~878 lines) - Shared library with all data processing functions
+- **`consolidate_crime_data.py`** (~150 lines) - Consolidates downloaded crime CSV files
 - **`plot_schools.py`** (~724 lines) - Generates static cluster map using Folium
 - **`generate_school_data.py`** (~120 lines) - Fast data-only processing (no map)
 - **`create_standalone_app.py`** - Builds standalone HTML file with embedded data
@@ -99,6 +113,8 @@ aws s3 cp school_finder.html s3://your-bucket/index.html \
 ### Data Flow
 
 ```
+Crime CSVs → consolidate_crime_data.py → combined_crimes.csv.gz
+                                                    ↓
 School CSVs → Consolidate → Filter by percentile → Geocode (AWS) → Calculate crime stats → Cache
                                                                                               ↓
                                                           plot_schools.py → schools_map.html
@@ -180,6 +196,64 @@ map_uk_schools/
 ├── schools_map.html
 └── school_finder.html
 ```
+
+---
+
+## Crime Data Processing
+
+The `consolidate_crime_data.py` script processes raw crime data from data.police.uk into a format optimized for the school finder.
+
+### What It Does
+
+1. **Scans directory structure**: Recursively finds all crime CSV files
+2. **Filters files**: Excludes outcome files (only crime incidents are needed)
+3. **Extracts columns**: Month, Longitude, Latitude, Crime type (other columns discarded)
+4. **Combines data**: Merges all files into single dataframe
+5. **Compresses output**: Saves as `combined_crimes.csv.gz` (~200MB for 1 year)
+
+### Configuration
+
+You can configure crime processing in `config.json`:
+
+```json
+{
+  "crime": {
+    "crime_data_file": "combined_crimes.csv.gz",
+    "source_crime_data_dir": "/path/to/extracted/data",
+    "excluded_outcomes": true
+  },
+  "crime_processing": {
+    "columns": ["Month", "Longitude", "Latitude", "Crime type"],
+    "compress_output": true
+  }
+}
+```
+
+### Usage
+
+**Command line:**
+```bash
+# Specify directory containing extracted crime data
+python3 consolidate_crime_data.py --crime-data-dir ~/Downloads/police-data-2023
+
+# Custom output file
+python3 consolidate_crime_data.py --crime-data-dir ~/Downloads/police-data-2023 --output my_crimes.csv.gz
+```
+
+**Via config:**
+```bash
+# Add source_crime_data_dir to config.json, then run without arguments
+python3 consolidate_crime_data.py
+```
+
+### Crime Statistics Used
+
+The school finder calculates crime statistics within 3km of each school:
+- **Excluded types**: Shoplifting, Bicycle theft, Anti-social behaviour, Drugs, etc.
+- **Included types**: Violence, Burglary, Robbery, Vehicle crime, etc.
+- **Crime index**: Percentile ranking (0-1, lower is safer)
+
+Crime filtering is configurable via `config.json` → `crime.excluded_crime_types`.
 
 ---
 
