@@ -229,6 +229,49 @@ def get_html_template():
             display: block;
         }
 
+        /* School detail panel */
+        .school-detail {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 400px;
+            max-width: calc(100vw - 20px);
+            max-height: 60vh;
+            overflow-y: auto;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            font-size: 9pt;
+        }
+
+        .school-detail.show {
+            display: block;
+        }
+
+        .school-detail .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+            box-shadow: none;
+        }
+
+        .school-detail .close-btn:hover {
+            background: #cc0000;
+        }
+
         /* Mobile adjustments */
         @media (max-width: 768px) {
             .controls {
@@ -252,6 +295,13 @@ def get_html_template():
             .info-panel {
                 font-size: 12px;
                 padding: 10px;
+            }
+
+            .school-detail {
+                width: calc(100vw - 20px);
+                max-height: 50vh;
+                bottom: 5px;
+                right: 5px;
             }
         }
 
@@ -352,6 +402,11 @@ def get_html_template():
     </div>
 
     <div class="loading" id="loading">Loading school data...</div>
+
+    <div class="school-detail" id="schoolDetail">
+        <button class="close-btn" id="closeDetail">×</button>
+        <div id="schoolDetailContent"></div>
+    </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -609,8 +664,8 @@ def get_html_template():
                     icon: createMarkerIcon(school)
                 }).addTo(map);
 
-                marker.bindPopup(createPopupContent(school), {
-                    maxWidth: 350
+                marker.on('click', () => {
+                    showSchoolDetail(school);
                 });
 
                 currentMarkers.push(marker);
@@ -726,6 +781,16 @@ def get_html_template():
             document.getElementById('schoolCount').textContent = `${count} school${count !== 1 ? 's' : ''}`;
         }
 
+        function showSchoolDetail(school) {
+            const content = createPopupContent(school);
+            document.getElementById('schoolDetailContent').innerHTML = content;
+            document.getElementById('schoolDetail').classList.add('show');
+        }
+
+        function hideSchoolDetail() {
+            document.getElementById('schoolDetail').classList.remove('show');
+        }
+
         // Event listeners
         document.getElementById('locationBtn').addEventListener('click', useCurrentLocation);
         document.getElementById('searchBtn').addEventListener('click', searchAddress);
@@ -734,6 +799,7 @@ def get_html_template():
                 searchAddress();
             }
         });
+        document.getElementById('closeDetail').addEventListener('click', hideSchoolDetail);
 
         // Initialize
         initMap();
