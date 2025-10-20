@@ -1,0 +1,82 @@
+{
+  "clustering": {
+    "default_cluster_radius_km": 5,
+    "default_min_schools": 2
+  },
+  "crime": {
+    "school_crime_radius_km": 3,
+    "crime_data_file": "combined_crimes.csv.gz",
+    "excluded_crime_types": [
+      "Shoplifting",
+      "Bicycle theft",
+      "Other theft",
+      "Other crime",
+      "Drugs",
+      "Anti-social behaviour",
+      "Criminal damage and arson"
+    ]
+  },
+  "geocoding": {
+    "index_name": "your-place-index-name",
+    "region_name": "eu-west-2"
+  },
+  "caching": {
+    "geocoding_cache_file": "geocoding_cache.json",
+    "crime_cache_file": "crime_cache.json"
+  },
+  "filtering": {
+    "percentile": 0.90,
+    "min_age_threshold": 7
+  },
+  "grading": {
+    "a_star_threshold": 50,
+    "a_threshold": 40
+  },
+  "colors": {
+    "independent": {
+      "a_star": "#FF0000",
+      "a": "#FFA500",
+      "b_or_below": "#FFD700"
+    },
+    "state": {
+      "a_star": "#000080",
+      "a": "#0000FF",
+      "b_or_below": "#4169E1"
+    },
+    "cluster": {
+      "circle": "#1E90FF",
+      "center_marker": "#FF4500"
+    }
+  },
+  "data": {
+    "school_data_pattern": "20*ks5final*.csv.gz",
+    "required_columns": [
+      "SCHNAME",
+      "ADDRESS1",
+      "TOWN",
+      "PCODE",
+      "TELNUM",
+      "ADMPOL_PT",
+      "GEND1618",
+      "AGERANGE",
+      "TPUP1618",
+      "TALLPPE_ALEV_1618",
+      "TB3PTSE",
+      "YEAR"
+    ],
+    "numeric_columns": [
+      "TB3PTSE",
+      "TALLPPE_ALEV_1618"
+    ]
+  },
+  "output": {
+    "processed_csv": "processed_school_data.csv",
+    "map_filename": "schools_map.html"
+  },
+  "map": {
+    "default_zoom": 8,
+    "marker_size": 30,
+    "cluster_marker_size": 20,
+    "popup_max_width": 350
+  }
+}

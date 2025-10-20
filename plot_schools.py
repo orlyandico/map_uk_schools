@@ -2,6 +2,7 @@ import os
 import re
 import json
 import math
+import hashlib
 from collections import defaultdict
 
 import pandas as pd
@@ -12,50 +13,173 @@ import boto3
 from botocore.exceptions import ClientError
 from tqdm import tqdm
 from geopy.distance import geodesic
+from sklearn.neighbors import BallTree
 
-# Constants for clustering
-DEFAULT_CLUSTER_RADIUS_KM = 5
-DEFAULT_MIN_SCHOOLS = 2
-PERCENTILE = 0.90
 
-# Crime analysis constants
-SCHOOL_CRIME_RADIUS_KM = 3  # Individual school crime analysis radius
+# Load configuration
+def load_config(config_path="config.json"):
+    """Load configuration from JSON file"""
+    try:
+        with open(config_path, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print(f"Warning: Config file {config_path} not found. Using default values.")
+        return get_default_config()
+    except json.JSONDecodeError as e:
+        print(f"Error parsing config file: {e}. Using default values.")
+        return get_default_config()
 
-# Crime data file
-CRIME_DATA_FILE = "combined_crimes.csv.gz"
+
+def get_default_config():
+    """Return default configuration if config file is missing"""
+    return {
+        "clustering": {"default_cluster_radius_km": 5, "default_min_schools": 2},
+        "crime": {
+            "school_crime_radius_km": 3,
+            "crime_data_file": "combined_crimes.csv.gz",
+            "excluded_crime_types": [
+                "Shoplifting",
+                "Bicycle theft",
+                "Other theft",
+                "Other crime",
+                "Drugs",
+                "Anti-social behaviour",
+                "Criminal damage and arson",
+            ],
+        },
+        "geocoding": {"index_name": "your-place-index-name", "region_name": "eu-west-2"},
+        "caching": {
+            "geocoding_cache_file": "geocoding_cache.json",
+            "crime_cache_file": "crime_cache.json",
+        },
+        "filtering": {"percentile": 0.90, "min_age_threshold": 7},
+        "grading": {"a_star_threshold": 50, "a_threshold": 40},
+        "colors": {
+            "independent": {"a_star": "#FF0000", "a": "#FFA500", "b_or_below": "#FFD700"},
+            "state": {"a_star": "#000080", "a": "#0000FF", "b_or_below": "#4169E1"},
+            "cluster": {"circle": "#1E90FF", "center_marker": "#FF4500"},
+        },
+        "data": {
+            "school_data_pattern": "20*ks5final*.csv.gz",
+            "required_columns": [
+                "SCHNAME",
+                "ADDRESS1",
+                "TOWN",
+                "PCODE",
+                "TELNUM",
+                "ADMPOL_PT",
+                "GEND1618",
+                "AGERANGE",
+                "TPUP1618",
+                "TALLPPE_ALEV_1618",
+                "TB3PTSE",
+                "YEAR",
+            ],
+            "numeric_columns": ["TB3PTSE", "TALLPPE_ALEV_1618"],
+        },
+        "output": {
+            "processed_csv": "processed_school_data.csv",
+            "map_filename": "schools_map.html",
+        },
+        "map": {
+            "default_zoom": 8,
+            "marker_size": 30,
+            "cluster_marker_size": 20,
+            "popup_max_width": 350,
+        },
+    }
+
+
+# Load configuration at module level
+config = load_config()
 
 # Geocoding cache
 geocoding_cache = {}
-CACHE_FILE = "geocoding_cache.json"
 
 # Crime cache
 crime_cache = {}
-CRIME_CACHE_FILE = "crime_cache.json"
+
+
+def get_file_hash(filepath, chunk_size=8192):
+    """
+    Calculate SHA256 hash of a file for cache validation.
+
+    This is more reliable than file size + mtime because:
+    - Detects any content changes, even if file size stays the same
+    - Not affected by file system operations that preserve timestamps
+    - Produces consistent results across different systems
+
+    Args:
+        filepath: Path to file to hash
+        chunk_size: Size of chunks to read (default 8KB for memory efficiency)
+
+    Returns:
+        Hexadecimal hash string, or None if file doesn't exist
+    """
+    if not os.path.exists(filepath):
+        return None
+
+    sha256 = hashlib.sha256()
+    try:
+        with open(filepath, 'rb') as f:
+            for chunk in iter(lambda: f.read(chunk_size), b''):
+                sha256.update(chunk)
+        return sha256.hexdigest()
+    except Exception as e:
+        print(f"Error hashing file {filepath}: {e}")
+        return None
 
 
 def load_crime_cache():
-    """Load crime cache from file if it exists and is valid"""
+    """
+    Load crime cache from file if it exists and is valid.
+
+    Cache is considered valid only if ALL of these match:
+    - Crime data file hash matches (detects content changes)
+    - Excluded crime types match (config parameter)
+    - Crime radius matches (config parameter)
+
+    This ensures cache is invalidated when data OR configuration changes.
+    """
     global crime_cache
-    if not os.path.exists(CRIME_CACHE_FILE) or not os.path.exists(CRIME_DATA_FILE):
+    crime_cache_file = config["caching"]["crime_cache_file"]
+    crime_data_file = config["crime"]["crime_data_file"]
+
+    if not os.path.exists(crime_cache_file) or not os.path.exists(crime_data_file):
         crime_cache = {}
         return
 
     try:
-        with open(CRIME_CACHE_FILE, "r") as f:
+        with open(crime_cache_file, "r") as f:
             cache_data = json.load(f)
 
-        # Check if crime file has changed
-        crime_stat = os.stat(CRIME_DATA_FILE)
         cache_meta = cache_data.get("_metadata", {})
 
-        if (
-            cache_meta.get("file_size") == crime_stat.st_size
-            and cache_meta.get("file_mtime") == crime_stat.st_mtime
-        ):
+        # Calculate current file hash and config parameters
+        current_hash = get_file_hash(crime_data_file)
+        current_excluded = sorted(config["crime"]["excluded_crime_types"])
+        current_radius = config["crime"]["school_crime_radius_km"]
+
+        # Validate all cache parameters
+        cached_hash = cache_meta.get("crime_file_hash")
+        cached_excluded = cache_meta.get("excluded_crimes", [])
+        cached_radius = cache_meta.get("school_crime_radius_km")
+
+        # Check if cache is still valid
+        if (current_hash and
+            cached_hash == current_hash and
+            cached_excluded == current_excluded and
+            cached_radius == current_radius):
             crime_cache = {k: v for k, v in cache_data.items() if not k.startswith("_")}
             print(f"Loaded {len(crime_cache)} cached crime calculations")
         else:
-            print("Crime file changed, invalidating cache")
+            # Provide helpful feedback about what changed
+            if cached_hash != current_hash:
+                print("Crime data file changed, invalidating cache")
+            elif cached_excluded != current_excluded:
+                print("Crime exclusion filters changed in config, invalidating cache")
+            elif cached_radius != current_radius:
+                print(f"Crime radius changed ({cached_radius}km → {current_radius}km), invalidating cache")
             crime_cache = {}
     except Exception as e:
         print(f"Error loading crime cache: {e}")
@@ -63,18 +187,30 @@ def load_crime_cache():
 
 
 def save_crime_cache():
-    """Save crime cache to file with metadata"""
+    """
+    Save crime cache to file with comprehensive metadata for validation.
+
+    Metadata includes:
+    - File hash: Detects any content changes in crime data
+    - Excluded crimes: Config parameter that affects calculations
+    - Radius: Config parameter that affects calculations
+    - Timestamp: When cache was created
+    """
+    crime_cache_file = config["caching"]["crime_cache_file"]
+    crime_data_file = config["crime"]["crime_data_file"]
+
     try:
         cache_data = dict(crime_cache)
-        if os.path.exists(CRIME_DATA_FILE):
-            crime_stat = os.stat(CRIME_DATA_FILE)
+        if os.path.exists(crime_data_file):
+            file_hash = get_file_hash(crime_data_file)
             cache_data["_metadata"] = {
-                "file_size": crime_stat.st_size,
-                "file_mtime": crime_stat.st_mtime,
+                "crime_file_hash": file_hash,
+                "excluded_crimes": sorted(config["crime"]["excluded_crime_types"]),
+                "school_crime_radius_km": config["crime"]["school_crime_radius_km"],
                 "cached_at": pd.Timestamp.now().isoformat(),
             }
 
-        with open(CRIME_CACHE_FILE, "w") as f:
+        with open(crime_cache_file, "w") as f:
             json.dump(cache_data, f, indent=2)
         print(f"Saved {len(crime_cache)} crime calculations to cache")
     except Exception as e:
@@ -84,9 +220,11 @@ def save_crime_cache():
 def load_geocoding_cache():
     """Load geocoding cache from file if it exists"""
     global geocoding_cache
-    if os.path.exists(CACHE_FILE):
+    cache_file = config["caching"]["geocoding_cache_file"]
+
+    if os.path.exists(cache_file):
         try:
-            with open(CACHE_FILE, "r") as f:
+            with open(cache_file, "r") as f:
                 geocoding_cache = json.load(f)
             print(f"Loaded {len(geocoding_cache)} cached geocoded addresses")
         except Exception as e:
@@ -98,8 +236,10 @@ def load_geocoding_cache():
 
 def save_geocoding_cache():
     """Save geocoding cache to file"""
+    cache_file = config["caching"]["geocoding_cache_file"]
+
     try:
-        with open(CACHE_FILE, "w") as f:
+        with open(cache_file, "w") as f:
             json.dump(geocoding_cache, f, indent=2)
         print(f"Saved {len(geocoding_cache)} unique addresses to cache")
     except Exception as e:
@@ -108,20 +248,26 @@ def save_geocoding_cache():
 
 def point_score_to_grade(point_score):
     """Convert point score to grade"""
+    a_star_threshold = config["grading"]["a_star_threshold"]
+    a_threshold = config["grading"]["a_threshold"]
+
     if pd.isna(point_score) or point_score == 0:
         return "N/A"
-    elif point_score >= 50:
+    elif point_score >= a_star_threshold:
         return "A*"
-    elif point_score >= 40:
+    elif point_score >= a_threshold:
         return "A"
     else:
         return "≤B"
 
 
-def reverse_geocode_location(
-    lat, lon, index_name="your-place-index-name", region_name="eu-west-2"
-):
+def reverse_geocode_location(lat, lon, index_name=None, region_name=None):
     """Reverse geocode coordinates to get postcode using Amazon Location Services"""
+    if index_name is None:
+        index_name = config["geocoding"]["index_name"]
+    if region_name is None:
+        region_name = config["geocoding"]["region_name"]
+
     try:
         location_client = boto3.client("location", region_name=region_name)
         response = location_client.search_place_index_for_position(
@@ -151,14 +297,22 @@ def reverse_geocode_location(
 
 def geocode_address(
     address,
-    index_name="your-place-index-name",
-    region_name="eu-west-2",
+    index_name=None,
+    region_name=None,
     pbar=None,
     hits_counter=None,
     misses_counter=None,
     crime_df=None,
+    crime_calc_counter=None,
 ):
     """Geocode address using Amazon Location Services with caching"""
+    if index_name is None:
+        index_name = config["geocoding"]["index_name"]
+    if region_name is None:
+        region_name = config["geocoding"]["region_name"]
+
+    school_crime_radius_km = config["crime"]["school_crime_radius_km"]
+
     if not address or pd.isna(address):
         if pbar:
             pbar.update(1)
@@ -170,18 +324,26 @@ def geocode_address(
 
         # Check if we have crime data cached for this location
         crime_cache_key = (
-            f"{lat:.6f},{lon:.6f},{SCHOOL_CRIME_RADIUS_KM}" if lat else None
+            f"{lat:.6f},{lon:.6f},{school_crime_radius_km}" if lat else None
         )
         crime_stats = crime_cache.get(crime_cache_key) if crime_cache_key else None
 
         # If no crime stats cached but we have coordinates and crime_df, calculate now
         if lat and crime_df is not None and not crime_stats:
             crime_stats = get_crime_stats_for_location(
-                lat, lon, SCHOOL_CRIME_RADIUS_KM, crime_df
+                lat, lon, school_crime_radius_km, crime_df
             )
+            if crime_calc_counter is not None:
+                crime_calc_counter[0] += 1
 
         if pbar:
-            pbar.set_postfix(cache_hits=hits_counter[0], cache_misses=misses_counter[0])
+            postfix = {
+                "geo_hits": hits_counter[0],
+                "geo_miss": misses_counter[0]
+            }
+            if crime_calc_counter is not None and crime_calc_counter[0] > 0:
+                postfix["crime_calc"] = crime_calc_counter[0]
+            pbar.set_postfix(postfix)
             hits_counter[0] += 1
             pbar.update(1)
         return pd.Series(
@@ -190,7 +352,13 @@ def geocode_address(
 
     try:
         if pbar:
-            pbar.set_postfix(cache_hits=hits_counter[0], cache_misses=misses_counter[0])
+            postfix = {
+                "geo_hits": hits_counter[0],
+                "geo_miss": misses_counter[0]
+            }
+            if crime_calc_counter is not None and crime_calc_counter[0] > 0:
+                postfix["crime_calc"] = crime_calc_counter[0]
+            pbar.set_postfix(postfix)
             misses_counter[0] += 1
 
         location_client = boto3.client("location", region_name=region_name)
@@ -206,8 +374,10 @@ def geocode_address(
             crime_stats = None
             if crime_df is not None:
                 crime_stats = get_crime_stats_for_location(
-                    lat, lon, SCHOOL_CRIME_RADIUS_KM, crime_df
+                    lat, lon, school_crime_radius_km, crime_df
                 )
+                if crime_calc_counter is not None:
+                    crime_calc_counter[0] += 1
 
             # Store in cache
             geocoding_cache[address] = (lat, lon)
@@ -273,9 +443,11 @@ def get_crime_stats_for_location(center_lat, center_lon, radius_km, crime_df=Non
     if cache_key in crime_cache:
         return crime_cache[cache_key]
 
+    crime_data_file = config["crime"]["crime_data_file"]
+
     if crime_df is None:
         try:
-            crime_df = pd.read_csv(CRIME_DATA_FILE)
+            crime_df = pd.read_csv(crime_data_file)
         except FileNotFoundError:
             result = {
                 "total_crimes": 0,
@@ -286,15 +458,7 @@ def get_crime_stats_for_location(center_lat, center_lon, radius_km, crime_df=Non
             return result
 
     # Filter out low-impact crimes
-    excluded_crimes = {
-        "Shoplifting",
-        "Bicycle theft",
-        "Other theft",
-        "Other crime",
-        "Drugs",
-        "Anti-social behaviour",
-        "Criminal damage and arson",
-    }
+    excluded_crimes = set(config["crime"]["excluded_crime_types"])
     crime_df_filtered = crime_df[~crime_df["Crime type"].isin(excluded_crimes)]
 
     # Use bounding box for initial filtering
@@ -387,20 +551,24 @@ def filter_by_age_range(df, min_age_threshold=7):
 
 def get_grade_color(score, is_independent):
     """Get color for school marker based on score and type"""
+    a_star_threshold = config["grading"]["a_star_threshold"]
+    a_threshold = config["grading"]["a_threshold"]
+    colors = config["colors"]
+
     if is_independent:
-        if score >= 50:
-            return "#FF0000"  # Red for A*
-        elif score >= 40:
-            return "#FFA500"  # Orange for A
+        if score >= a_star_threshold:
+            return colors["independent"]["a_star"]
+        elif score >= a_threshold:
+            return colors["independent"]["a"]
         else:
-            return "#FFD700"  # Gold for ≤B
+            return colors["independent"]["b_or_below"]
     else:
-        if score >= 50:
-            return "#000080"  # Navy for A*
-        elif score >= 40:
-            return "#0000FF"  # Blue for A
+        if score >= a_star_threshold:
+            return colors["state"]["a_star"]
+        elif score >= a_threshold:
+            return colors["state"]["a"]
         else:
-            return "#4169E1"  # Royal Blue for ≤B
+            return colors["state"]["b_or_below"]
 
 
 def get_text_color(background_color):
@@ -413,7 +581,10 @@ def get_text_color(background_color):
 
 def cluster_schools(df, max_distance_km, min_schools=2):
     """
-    Efficient school clustering algorithm using school locations as potential centers
+    Optimized school clustering algorithm using BallTree for spatial indexing
+
+    This is significantly faster than the O(n²) nested loop approach.
+    BallTree uses haversine distance metric for accurate geographic calculations.
 
     Returns:
         tuple: (labels array, cluster_centers_data list)
@@ -426,27 +597,32 @@ def cluster_schools(df, max_distance_km, min_schools=2):
     # Reset index to ensure consistent positioning
     df_reset = df.reset_index(drop=True)
 
+    # Prepare coordinates for BallTree (needs radians for haversine metric)
+    coords = np.radians(df_reset[["Latitude", "Longitude"]].values)
+
+    # Build BallTree with haversine metric for geographic distances
+    # Haversine accounts for Earth's curvature
+    tree = BallTree(coords, metric='haversine')
+
+    # Convert km to radians for BallTree query (Earth radius = 6371 km)
+    radius_radians = max_distance_km / 6371.0
+
+    # Find all schools within radius for each potential center
+    # This is MUCH faster than nested loops: O(n log n) vs O(n²)
+    indices_list = tree.query_radius(coords, r=radius_radians)
+
     # Find potential cluster centers
     cluster_centers = []
-    for center_idx, center_row in df_reset.iterrows():
-        center_lat, center_lon = center_row["Latitude"], center_row["Longitude"]
-
-        # Find nearby schools
-        nearby_schools = []
-        for school_idx, school_row in df_reset.iterrows():
-            distance = geodesic(
-                (center_lat, center_lon),
-                (school_row["Latitude"], school_row["Longitude"]),
-            ).km
-            if distance <= max_distance_km:
-                nearby_schools.append(school_idx)
+    for center_idx, nearby_indices in enumerate(indices_list):
+        nearby_schools = nearby_indices.tolist()
 
         # Check if this forms a valid cluster
         if len(nearby_schools) >= min_schools:
+            center_row = df_reset.iloc[center_idx]
             cluster_centers.append(
                 {
-                    "lat": center_lat,
-                    "lon": center_lon,
+                    "lat": center_row["Latitude"],
+                    "lon": center_row["Longitude"],
                     "schools": nearby_schools,
                     "count": len(nearby_schools),
                     "center_school_idx": center_idx,
@@ -581,11 +757,14 @@ def create_school_marker(
         popup_html += format_crime_stats(school_crime_stats, school_crime_index)
 
     # Create marker icon
+    marker_size = config["map"]["marker_size"]
+    popup_max_width = config["map"]["popup_max_width"]
+
     icon = DivIcon(
-        icon_size=(30, 30),
-        icon_anchor=(15, 30),
+        icon_size=(marker_size, marker_size),
+        icon_anchor=(marker_size // 2, marker_size),
         html=f'''
-            <div style="width: 30px; height: 30px;">
+            <div style="width: {marker_size}px; height: {marker_size}px;">
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 0C7.58 0 4 3.58 4 8c0 5.76 8 16 8 16s8-10.24 8-16c0-4.42-3.58-8-8-8z"
                         fill="{colour}"
@@ -600,14 +779,18 @@ def create_school_marker(
 
     return folium.Marker(
         [row["Latitude"], row["Longitude"]],
-        popup=folium.Popup(popup_html, max_width=350),
+        popup=folium.Popup(popup_html, max_width=popup_max_width),
         icon=icon,
     )
 
 
 def create_legend():
     """Create HTML legend for the map"""
-    return """
+    colors = config["colors"]
+    a_star_threshold = config["grading"]["a_star_threshold"]
+    a_threshold = config["grading"]["a_threshold"]
+
+    return f"""
     <div style="position: fixed;
                 bottom: 10px; right: 10px;
                 width: 140px;
@@ -622,30 +805,43 @@ def create_legend():
         <div style="font-weight: bold; margin-bottom: 8px; font-size:12px;">Legend</div>
         <div style="font-weight: bold; margin-bottom: 6px; font-size:10px;">Independent</div>
         <div style="margin-bottom: 3px;">
-            <span style="display:inline-block; width: 10px; height: 10px; background-color: #FF0000; margin-right: 4px;"></span>A* (≥50)
+            <span style="display:inline-block; width: 10px; height: 10px; background-color: {colors["independent"]["a_star"]}; margin-right: 4px;"></span>A* (≥{a_star_threshold})
         </div>
         <div style="margin-bottom: 3px;">
-            <span style="display:inline-block; width: 10px; height: 10px; background-color: #FFA500; margin-right: 4px;"></span>A (40-49)
+            <span style="display:inline-block; width: 10px; height: 10px; background-color: {colors["independent"]["a"]}; margin-right: 4px;"></span>A ({a_threshold}-{a_star_threshold-1})
         </div>
         <div style="margin-bottom: 8px;">
-            <span style="display:inline-block; width: 10px; height: 10px; background-color: #FFD700; margin-right: 4px;"></span>≤B (<40)
+            <span style="display:inline-block; width: 10px; height: 10px; background-color: {colors["independent"]["b_or_below"]}; margin-right: 4px;"></span>≤B (<{a_threshold})
         </div>
         <div style="font-weight: bold; margin-bottom: 6px; font-size:10px;">State</div>
         <div style="margin-bottom: 3px;">
-            <span style="display:inline-block; width: 10px; height: 10px; background-color: #000080; margin-right: 4px;"></span>A* (≥50)
+            <span style="display:inline-block; width: 10px; height: 10px; background-color: {colors["state"]["a_star"]}; margin-right: 4px;"></span>A* (≥{a_star_threshold})
         </div>
         <div style="margin-bottom: 3px;">
-            <span style="display:inline-block; width: 10px; height: 10px; background-color: #0000FF; margin-right: 4px;"></span>A (40-49)
+            <span style="display:inline-block; width: 10px; height: 10px; background-color: {colors["state"]["a"]}; margin-right: 4px;"></span>A ({a_threshold}-{a_star_threshold-1})
         </div>
         <div>
-            <span style="display:inline-block; width: 10px; height: 10px; background-color: #4169E1; margin-right: 4px;"></span>≤B (<40)
+            <span style="display:inline-block; width: 10px; height: 10px; background-color: {colors["state"]["b_or_below"]}; margin-right: 4px;"></span>≤B (<{a_threshold})
         </div>
     </div>
     """
 
 
-def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SCHOOLS):
+def main(cluster_radius_km=None, min_schools=None):
     """Main function to process schools and create map"""
+    # Use config defaults if not specified
+    if cluster_radius_km is None:
+        cluster_radius_km = config["clustering"]["default_cluster_radius_km"]
+    if min_schools is None:
+        min_schools = config["clustering"]["default_min_schools"]
+
+    crime_data_file = config["crime"]["crime_data_file"]
+    school_crime_radius_km = config["crime"]["school_crime_radius_km"]
+    percentile = config["filtering"]["percentile"]
+    school_data_pattern = config["data"]["school_data_pattern"]
+    output_csv = config["output"]["processed_csv"]
+    map_filename = config["output"]["map_filename"]
+
     # Load geocoding cache
     load_geocoding_cache()
 
@@ -655,21 +851,21 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
     # Load crime data
     print("Loading crime data...")
     try:
-        crime_df = pd.read_csv(CRIME_DATA_FILE)
+        crime_df = pd.read_csv(crime_data_file)
         print(f"Loaded {len(crime_df)} crime records")
     except FileNotFoundError:
         print(
-            f"Warning: Crime data file {CRIME_DATA_FILE} not found. Crime statistics will not be available."
+            f"Warning: Crime data file {crime_data_file} not found. Crime statistics will not be available."
         )
         crime_df = None
 
     # Find and load all school data files
     import glob
 
-    csv_files = glob.glob("20*ks5final*.csv.gz")
+    csv_files = glob.glob(school_data_pattern)
     if not csv_files:
         print(
-            "Error: No school data files found matching pattern '20*ks5final*.csv.gz'"
+            f"Error: No school data files found matching pattern '{school_data_pattern}'"
         )
         return
 
@@ -697,20 +893,7 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
     print(f"Combined total rows: {len(df)}")
 
     # Select and process columns
-    columns_to_keep = [
-        "SCHNAME",
-        "ADDRESS1",
-        "TOWN",
-        "PCODE",
-        "TELNUM",
-        "ADMPOL_PT",
-        "GEND1618",
-        "AGERANGE",
-        "TPUP1618",
-        "TALLPPE_ALEV_1618",
-        "TB3PTSE",
-        "YEAR",
-    ]
+    columns_to_keep = config["data"]["required_columns"]
 
     try:
         df_selected = df[columns_to_keep].copy()
@@ -719,7 +902,7 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
         return
 
     # Convert numeric columns
-    numeric_columns = ["TB3PTSE", "TALLPPE_ALEV_1618"]
+    numeric_columns = config["data"]["numeric_columns"]
     for col in numeric_columns:
         df_selected[col] = pd.to_numeric(df_selected[col], errors="coerce").fillna(0)
 
@@ -758,12 +941,14 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
 
     # Filter by percentile and age range
     df_selected = df_selected[
-        df_selected["TB3PTSE"] >= df_selected["TB3PTSE"].quantile(PERCENTILE)
+        df_selected["TB3PTSE"] >= df_selected["TB3PTSE"].quantile(percentile)
     ]
-    print(f"Number of schools in P{PERCENTILE}: {len(df_selected)}")
+    print(f"Number of schools in P{percentile}: {len(df_selected)}")
 
-    #    df_selected = filter_by_age_range(df_selected, min_age_threshold=7)
-    #    print(f"Number of schools after age filtering: {len(df_selected)}")
+    # Optionally enable age filtering by uncommenting these lines
+    # min_age_threshold = config["filtering"]["min_age_threshold"]
+    # df_selected = filter_by_age_range(df_selected, min_age_threshold)
+    # print(f"Number of schools after age filtering: {len(df_selected)}")
 
     # Create full address for geocoding
     df_selected["full_address"] = df_selected.apply(
@@ -774,9 +959,10 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
     total_addresses = len(df_selected)
     cache_hits = [0]
     cache_misses = [0]
+    crime_calculations = [0]
 
-    print(f"Geocoding {total_addresses} addresses...")
-    with tqdm(total=total_addresses, desc="Geocoding", unit="address") as pbar:
+    print(f"Processing {total_addresses} addresses (geocoding and crime stats)...")
+    with tqdm(total=total_addresses, desc="Processing", unit="address") as pbar:
         geocoded_results = df_selected["full_address"].apply(
             lambda addr: geocode_address(
                 addr,
@@ -784,6 +970,7 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
                 hits_counter=cache_hits,
                 misses_counter=cache_misses,
                 crime_df=crime_df,
+                crime_calc_counter=crime_calculations,
             )
         )
 
@@ -792,8 +979,8 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
     df_selected["crime_stats"] = geocoded_results["crime_stats"]
 
     print(
-        f"Geocoding complete - Cache hits: {cache_hits[0]} ({cache_hits[0] / total_addresses:.1%}), "
-        f"Cache misses: {cache_misses[0]} ({cache_misses[0] / total_addresses:.1%})"
+        f"Processing complete - Geocoding: {cache_hits[0]} cached, {cache_misses[0]} new | "
+        f"Crime stats: {crime_calculations[0]} calculated"
     )
 
     # Save cache and remove schools without coordinates
@@ -803,7 +990,6 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
     print(f"Schools with valid coordinates: {len(df_selected)}")
 
     # Save processed data
-    output_csv = "processed_school_data.csv"
     df_selected.sort_values(by="TB3PTSE", ascending=False).to_csv(
         output_csv, index=False
     )
@@ -812,18 +998,19 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
     # Create map
     center_lat = df_selected["Latitude"].mean()
     center_lon = df_selected["Longitude"].mean()
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=8)
+    default_zoom = config["map"]["default_zoom"]
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=default_zoom)
 
     # Add title
     title_html = f"""
         <h3 align="center" style="font-size:20px">
         <a href="https://www.compare-school-performance.service.gov.uk/download-data">
-        Schools by A-Level Performance, Multi-Year Average ({PERCENTILE} Percentile)
+        Schools by A-Level Performance, Multi-Year Average ({percentile} Percentile)
         </a>
         <br>
         <span style="font-size:16px">Clustered with {cluster_radius_km}km radius (min {min_schools} schools per cluster)</span>
         <br>
-        <span style="font-size:16px">Crimes in {SCHOOL_CRIME_RADIUS_KM}km radius around school, index is percentile with 1.00 maximum</span>
+        <span style="font-size:16px">Crimes in {school_crime_radius_km}km radius around school, index is percentile with 1.00 maximum</span>
         </h3>
     """
     m.get_root().html.add_child(folium.Element(title_html))
@@ -867,10 +1054,11 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
         postcode = center_data.get("postcode", "Unknown")
 
         # Add cluster circle
+        cluster_colors = config["colors"]["cluster"]
         folium.Circle(
             location=[center_lat, center_lon],
             radius=cluster_radius_km * 1000,  # Convert to meters
-            color="#1E90FF",
+            color=cluster_colors["circle"],
             fill=True,
             fill_opacity=0.2,
             weight=2,
@@ -878,13 +1066,14 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
         ).add_to(m)
 
         # Add center marker
+        cluster_marker_size = config["map"]["cluster_marker_size"]
         cluster_icon = DivIcon(
-            icon_size=(20, 20),
-            icon_anchor=(10, 10),
+            icon_size=(cluster_marker_size, cluster_marker_size),
+            icon_anchor=(cluster_marker_size // 2, cluster_marker_size // 2),
             html=f"""
-                <div style="width: 20px; height: 20px;">
+                <div style="width: {cluster_marker_size}px; height: {cluster_marker_size}px;">
                     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="10" fill="#FF4500" stroke="#000000" stroke-width="2"/>
+                        <circle cx="12" cy="12" r="10" fill="{cluster_colors["center_marker"]}" stroke="#000000" stroke-width="2"/>
                         <text x="12" y="12" font-family="Arial" font-size="10" font-weight="bold"
                               fill="#FFFFFF" text-anchor="middle" dy=".3em">{cluster_id}</text>
                     </svg>
@@ -970,7 +1159,7 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
         if cluster_school_crimes:
             avg_school_crime = sum(cluster_school_crimes) / len(cluster_school_crimes)
             print(
-                f"  Average school-level crime ({SCHOOL_CRIME_RADIUS_KM}km radius): {avg_school_crime:.1f}"
+                f"  Average school-level crime ({school_crime_radius_km}km radius): {avg_school_crime:.1f}"
             )
 
         for school in schools:
@@ -992,7 +1181,7 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
         avg_school_crime = df_selected["crime_count"].mean()
 
         print(
-            f"\nOverall Crime Statistics (per school, {SCHOOL_CRIME_RADIUS_KM}km radius):"
+            f"\nOverall Crime Statistics (per school, {school_crime_radius_km}km radius):"
         )
         print(f"Maximum crimes around any school: {max_school_crime}")
         print(f"Minimum crimes around any school: {min_school_crime}")
@@ -1014,7 +1203,6 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
         )
 
     # Save map
-    map_filename = "schools_map.html"
     m.save(map_filename)
     print(f"Map saved as {map_filename}")
 
@@ -1022,18 +1210,21 @@ def main(cluster_radius_km=DEFAULT_CLUSTER_RADIUS_KM, min_schools=DEFAULT_MIN_SC
 if __name__ == "__main__":
     import argparse
 
+    default_radius = config["clustering"]["default_cluster_radius_km"]
+    default_min_schools = config["clustering"]["default_min_schools"]
+
     parser = argparse.ArgumentParser(description="Generate school clustering map")
     parser.add_argument(
         "--radius",
         type=float,
-        default=DEFAULT_CLUSTER_RADIUS_KM,
-        help=f"Cluster radius in km (default: {DEFAULT_CLUSTER_RADIUS_KM})",
+        default=default_radius,
+        help=f"Cluster radius in km (default: {default_radius})",
     )
     parser.add_argument(
         "--min-schools",
         type=int,
-        default=DEFAULT_MIN_SCHOOLS,
-        help=f"Minimum schools per cluster (default: {DEFAULT_MIN_SCHOOLS})",
+        default=default_min_schools,
+        help=f"Minimum schools per cluster (default: {default_min_schools})",
     )
 
     args = parser.parse_args()
