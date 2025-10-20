@@ -6,6 +6,8 @@
   "crime": {
     "school_crime_radius_km": 3,
     "crime_data_file": "combined_crimes.csv.gz",
+    "source_crime_data_dir": "/Users/orly/iCloudDrive/Documents/UK/crime_data/",
+    "excluded_outcomes": true,
     "excluded_crime_types": [
       "Shoplifting",
       "Bicycle theft",
@@ -15,6 +17,15 @@
       "Anti-social behaviour",
       "Criminal damage and arson"
     ]
+  },
+  "crime_processing": {
+    "columns": [
+      "Month",
+      "Longitude",
+      "Latitude",
+      "Crime type"
+    ],
+    "compress_output": true
   },
   "geocoding": {
     "index_name": "your-place-index-name",

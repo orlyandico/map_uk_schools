@@ -1,0 +1,387 @@
+2025-10-20 20:16:22,528 - INFO - ✓ Configuration validated successfully
+2025-10-20 20:16:22,529 - INFO - Loaded 327 cached geocoded addresses
+2025-10-20 20:16:22,663 - INFO - Loaded 254 cached crime calculations
+2025-10-20 20:16:22,663 - INFO - Loading crime data...
+2025-10-20 20:16:27,430 - INFO - Loaded 10775095 crime records
+2025-10-20 20:16:27,431 - INFO - Found 3 data files: ['2022-2023_england_ks5final.csv.gz', '2023-2024_england_ks5final.csv.gz', '2021-2022_england_ks5final.csv.gz']
+2025-10-20 20:16:27,719 - INFO - Loaded 2971 rows from 2021-2022_england_ks5final.csv.gz (year: 2021)
+2025-10-20 20:16:27,983 - INFO - Loaded 2973 rows from 2022-2023_england_ks5final.csv.gz (year: 2022)
+2025-10-20 20:16:28,240 - INFO - Loaded 2954 rows from 2023-2024_england_ks5final.csv.gz (year: 2023)
+2025-10-20 20:16:28,333 - INFO - Combined total rows: 8898
+2025-10-20 20:16:31,002 - INFO - Consolidated to 2543 unique schools
+2025-10-20 20:16:31,015 - INFO - Number of schools in P0.9: 255
+2025-10-20 20:16:31,018 - INFO - Processing 255 addresses (geocoding and crime stats)...
+2025-10-20 20:16:31,117 - INFO - Processing complete - Geocoding: 255 cached, 0 new | Crime stats: 0 calculated
+2025-10-20 20:16:31,119 - INFO - Saved 327 unique addresses to cache
+2025-10-20 20:16:31,243 - INFO - Saved 254 crime calculations to cache
+2025-10-20 20:16:31,245 - INFO - Schools with valid coordinates: 255
+2025-10-20 20:16:31,256 - INFO - Saved processed data to processed_school_data.csv
+2025-10-20 20:16:31,256 - INFO - Evaluating 255 schools as potential cluster centers...
+2025-10-20 20:16:31,275 - INFO - Found 189 potential cluster centers
+2025-10-20 20:16:31,276 - INFO - After removing redundancy: 58 cluster centers
+2025-10-20 20:16:31,276 - INFO - Calculating geographic centroids for each cluster...
+2025-10-20 20:16:31,300 - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-10-20 20:16:46,070 - INFO - Clustered 187 of 255 schools into 54 clusters
+2025-10-20 20:16:46,070 - INFO - Extracting crime statistics from geocoding cache...
+2025-10-20 20:16:46,212 - INFO - Saved 254 crime calculations to cache
+2025-10-20 20:16:46,705 - INFO - Map saved as schools_map.html
+2025-10-20 20:16:46,714 - INFO - 
+Clusters within 5 km (minimum 2 schools):
+2025-10-20 20:16:46,714 - INFO - Number of clusters: 54
+2025-10-20 20:16:46,714 - INFO - Unclustered schools: 68 of 255 (26.7%)
+2025-10-20 20:16:46,714 - INFO - 
+Cluster 4 (W1J 7JT):
+2025-10-20 20:16:46,714 - INFO -   Average school-level crime (3km radius): 117635.3
+2025-10-20 20:16:46,715 - INFO - - City of London School (London) - 145281 crimes (Index: 1.00)
+2025-10-20 20:16:46,715 - INFO - - Queen's Gate School (London) - 63424 crimes (Index: 0.96)
+2025-10-20 20:16:46,715 - INFO - - Lycee Francais Charles de Gaulle (London) - 64726 crimes (Index: 0.97)
+2025-10-20 20:16:46,715 - INFO - - Francis Holland School (London) - 106631 crimes (Index: 0.97)
+2025-10-20 20:16:46,715 - INFO - - Queen's College, London (London) - 140382 crimes (Index: 0.99)
+2025-10-20 20:16:46,715 - INFO - - The St Marylebone CofE School (London) - 136248 crimes (Index: 0.99)
+2025-10-20 20:16:46,715 - INFO - - King's College London Maths School (London) - 128921 crimes (Index: 0.98)
+2025-10-20 20:16:46,715 - INFO - - Francis Holland School (London) - 130536 crimes (Index: 0.98)
+2025-10-20 20:16:46,716 - INFO - - Westminster School (London) - 142569 crimes (Index: 1.00)
+2025-10-20 20:16:46,716 - INFO - 
+Cluster 5 (N6 4AA):
+2025-10-20 20:16:46,716 - INFO -   Average school-level crime (3km radius): 33863.2
+2025-10-20 20:16:46,716 - INFO - - Highgate School (nan) - 27038 crimes (Index: 0.86)
+2025-10-20 20:16:46,716 - INFO - - The Camden School for Girls (London) - 63118 crimes (Index: 0.96)
+2025-10-20 20:16:46,716 - INFO - - Channing School (Highgate) - 32222 crimes (Index: 0.89)
+2025-10-20 20:16:46,716 - INFO - - Woodhouse College (London) - 13075 crimes (Index: 0.71)
+2025-10-20 20:16:46,716 - INFO - 
+Cluster 6 (SW18 5TZ):
+2025-10-20 20:16:46,716 - INFO -   Average school-level crime (3km radius): 22365.4
+2025-10-20 20:16:46,716 - INFO - - Putney High School (nan) - 17150 crimes (Index: 0.76)
+2025-10-20 20:16:46,717 - INFO - - Emanuel School (London) - 31006 crimes (Index: 0.88)
+2025-10-20 20:16:46,717 - INFO - - Wimbledon High School GDST (nan) - 11891 crimes (Index: 0.67)
+2025-10-20 20:16:46,717 - INFO - - The London Oratory School (London) - 43402 crimes (Index: 0.94)
+2025-10-20 20:16:46,717 - INFO - - King's College School (London) - 8378 crimes (Index: 0.51)
+2025-10-20 20:16:46,717 - INFO - 
+Cluster 7 (W4 1DZ):
+2025-10-20 20:16:46,717 - INFO -   Average school-level crime (3km radius): 32181.1
+2025-10-20 20:16:46,717 - INFO - - Notting Hill & Ealing High School GDST (nan) - 18907 crimes (Index: 0.78)
+2025-10-20 20:16:46,717 - INFO - - Latymer Upper School and Latymer Prep (London) - 33788 crimes (Index: 0.91)
+2025-10-20 20:16:46,717 - INFO - - St Benedict's School (nan) - 20015 crimes (Index: 0.78)
+2025-10-20 20:16:46,717 - INFO - - The Cardinal Vaughan Memorial RC School (London) - 51705 crimes (Index: 0.96)
+2025-10-20 20:16:46,717 - INFO - - St Paul's Girls' School (London) - 44871 crimes (Index: 0.95)
+2025-10-20 20:16:46,717 - INFO - - The Godolphin and Latymer School (London) - 39937 crimes (Index: 0.93)
+2025-10-20 20:16:46,717 - INFO - - St Paul's School (London) - 31898 crimes (Index: 0.89)
+2025-10-20 20:16:46,718 - INFO - - The Harrodian School (London) - 24371 crimes (Index: 0.84)
+2025-10-20 20:16:46,718 - INFO - - Twyford Church of England High School (London) - 24138 crimes (Index: 0.83)
+2025-10-20 20:16:46,718 - INFO - 
+Cluster 8 (NW2 1RU):
+2025-10-20 20:16:46,718 - INFO -   Average school-level crime (3km radius): 26201.8
+2025-10-20 20:16:46,718 - INFO - - Menorah High School for Girls (London) - 26426 crimes (Index: 0.85)
+2025-10-20 20:16:46,718 - INFO - - The King Alfred School (London) - 20903 crimes (Index: 0.80)
+2025-10-20 20:16:46,718 - INFO - - South Hampstead High School (London) - 41900 crimes (Index: 0.93)
+2025-10-20 20:16:46,718 - INFO - - The Henrietta Barnett School (London) - 14572 crimes (Index: 0.73)
+2025-10-20 20:16:46,718 - INFO - - University College School (London) - 31211 crimes (Index: 0.89)
+2025-10-20 20:16:46,718 - INFO - - Michaela Community School (London) - 22199 crimes (Index: 0.81)
+2025-10-20 20:16:46,718 - INFO - 
+Cluster 9 (HA8 8):
+2025-10-20 20:16:46,718 - INFO -   Average school-level crime (3km radius): 7952.0
+2025-10-20 20:16:46,718 - INFO - - Hasmonean High School for Girls (London) - 13119 crimes (Index: 0.71)
+2025-10-20 20:16:46,719 - INFO - - Immanuel College (Bushey) - 1963 crimes (Index: 0.20)
+2025-10-20 20:16:46,719 - INFO - - Haberdashers' Girls' School (Borehamwood) - 3437 crimes (Index: 0.32)
+2025-10-20 20:16:46,719 - INFO - - Haberdashers' Boys' School (nan) - 3472 crimes (Index: 0.33)
+2025-10-20 20:16:46,719 - INFO - - North London Collegiate School (Middlesex) - 10023 crimes (Index: 0.58)
+2025-10-20 20:16:46,719 - INFO - - Yavneh College (Borehamwood) - 4928 crimes (Index: 0.39)
+2025-10-20 20:16:46,719 - INFO - - JFS (Harrow) - 18722 crimes (Index: 0.77)
+2025-10-20 20:16:46,719 - INFO - 
+Cluster 10 (TW11 9LG):
+2025-10-20 20:16:46,719 - INFO -   Average school-level crime (3km radius): 8943.3
+2025-10-20 20:16:46,719 - INFO - - Ibstock Place School (London) - 8751 crimes (Index: 0.53)
+2025-10-20 20:16:46,719 - INFO - - Hampton School (Hampton) - 7407 crimes (Index: 0.47)
+2025-10-20 20:16:46,719 - INFO - - Lady Eleanor Holles School (Hampton) - 7018 crimes (Index: 0.45)
+2025-10-20 20:16:46,720 - INFO - - Kingston Grammar School (Kingston upon Thames) - 9956 crimes (Index: 0.58)
+2025-10-20 20:16:46,720 - INFO - - Tiffin School (Kingston upon Thames) - 9866 crimes (Index: 0.57)
+2025-10-20 20:16:46,720 - INFO - - The Tiffin Girls' School (Kingston upon Thames) - 8775 crimes (Index: 0.54)
+2025-10-20 20:16:46,720 - INFO - - Surbiton High School (Kingston upon Thames) - 10830 crimes (Index: 0.62)
+2025-10-20 20:16:46,720 - INFO - 
+Cluster 11 (SE23 3DY):
+2025-10-20 20:16:46,720 - INFO -   Average school-level crime (3km radius): 29064.5
+2025-10-20 20:16:46,720 - INFO - - Dulwich College (London) - 21876 crimes (Index: 0.81)
+2025-10-20 20:16:46,720 - INFO - - James Allen's Girls' School (London) - 34250 crimes (Index: 0.92)
+2025-10-20 20:16:46,720 - INFO - - Colfe's School (London) - 21333 crimes (Index: 0.80)
+2025-10-20 20:16:46,720 - INFO - - The Charter School North Dulwich (London) - 36450 crimes (Index: 0.92)
+2025-10-20 20:16:46,720 - INFO - - St Dunstan's College (LONDON) - 26539 crimes (Index: 0.85)
+2025-10-20 20:16:46,720 - INFO - - Alleyn's School (London) - 33939 crimes (Index: 0.91)
+2025-10-20 20:16:46,721 - INFO - 
+Cluster 12 (CB2 8BW):
+2025-10-20 20:16:46,721 - INFO -   Average school-level crime (3km radius): 9599.7
+2025-10-20 20:16:46,721 - INFO - - Cardiff Sixth Form College, Cambridge (nan) - 11032 crimes (Index: 0.64)
+2025-10-20 20:16:46,721 - INFO - - Hills Road Sixth Form College (Cambridge) - 9401 crimes (Index: 0.55)
+2025-10-20 20:16:46,721 - INFO - - The Perse School (nan) - 7689 crimes (Index: 0.48)
+2025-10-20 20:16:46,721 - INFO - - Abbey College Cambridge (Cambridgeshire) - 9068 crimes (Index: 0.55)
+2025-10-20 20:16:46,721 - INFO - - The Leys School (Cambridge) - 10042 crimes (Index: 0.59)
+2025-10-20 20:16:46,721 - INFO - - The Stephen Perse Foundation (nan) - 10366 crimes (Index: 0.60)
+2025-10-20 20:16:46,721 - INFO - 
+Cluster 13 (BS6 7EJ):
+2025-10-20 20:16:46,721 - INFO -   Average school-level crime (3km radius): 22025.0
+2025-10-20 20:16:46,721 - INFO - - Queen Elizabeth's Hospital (Bristol) - 28322 crimes (Index: 0.87)
+2025-10-20 20:16:46,721 - INFO - - Clifton College (Bristol) - 24219 crimes (Index: 0.83)
+2025-10-20 20:16:46,722 - INFO - - Collegiate School (nan) - 23375 crimes (Index: 0.82)
+2025-10-20 20:16:46,722 - INFO - - Bristol Grammar School (Bristol) - 30774 crimes (Index: 0.88)
+2025-10-20 20:16:46,722 - INFO - - Redmaids' High School (Bristol) - 13043 crimes (Index: 0.70)
+2025-10-20 20:16:46,722 - INFO - - Badminton School (Bristol) - 12417 crimes (Index: 0.69)
+2025-10-20 20:16:46,722 - INFO - 
+Cluster 14 (CR2 7):
+2025-10-20 20:16:46,722 - INFO -   Average school-level crime (3km radius): 13322.3
+2025-10-20 20:16:46,722 - INFO - - Croydon High School (South Croydon) - 3208 crimes (Index: 0.30)
+2025-10-20 20:16:46,722 - INFO - - Trinity School (nan) - 17074 crimes (Index: 0.76)
+2025-10-20 20:16:46,722 - INFO - - Whitgift School (nan) - 19685 crimes (Index: 0.78)
+2025-10-20 20:16:46,722 - INFO - 
+Cluster 15 (OX3 0):
+2025-10-20 20:16:46,722 - INFO -   Average school-level crime (3km radius): 8937.6
+2025-10-20 20:16:46,722 - INFO - - Oxford International College (nan) - 12421 crimes (Index: 0.69)
+2025-10-20 20:16:46,722 - INFO - - d'Overbroeck's (Oxford) - 2076 crimes (Index: 0.22)
+2025-10-20 20:16:46,722 - INFO - - Oxford High School GDST (Oxford) - 7115 crimes (Index: 0.46)
+2025-10-20 20:16:46,722 - INFO - - Magdalen College School (Oxford) - 11736 crimes (Index: 0.66)
+2025-10-20 20:16:46,723 - INFO - - Headington Rye Oxford (Oxford) - 11340 crimes (Index: 0.65)
+2025-10-20 20:16:46,723 - INFO - 
+Cluster 16 (GU1 3QB):
+2025-10-20 20:16:46,723 - INFO -   Average school-level crime (3km radius): 6030.0
+2025-10-20 20:16:46,723 - INFO - - Tormead School (Guildford) - 7784 crimes (Index: 0.48)
+2025-10-20 20:16:46,723 - INFO - - Royal Grammar School Guildford (nan) - 8864 crimes (Index: 0.54)
+2025-10-20 20:16:46,723 - INFO - - St Peter's Catholic School (Guildford) - 4337 crimes (Index: 0.37)
+2025-10-20 20:16:46,723 - INFO - - Guildford High School (Guildford) - 8535 crimes (Index: 0.53)
+2025-10-20 20:16:46,723 - INFO - - St Catherine's School (Guildford) - 630 crimes (Index: 0.10)
+2025-10-20 20:16:46,723 - INFO - 
+Cluster 17 (SM5 3SJ):
+2025-10-20 20:16:46,723 - INFO -   Average school-level crime (3km radius): 12149.6
+2025-10-20 20:16:46,723 - INFO - - Wallington County Grammar School (Wallington) - 13045 crimes (Index: 0.71)
+2025-10-20 20:16:46,723 - INFO - - Nonsuch High School for Girls (Sutton) - 8245 crimes (Index: 0.50)
+2025-10-20 20:16:46,723 - INFO - - Sutton Grammar School (Sutton) - 13140 crimes (Index: 0.72)
+2025-10-20 20:16:46,723 - INFO - - Wilson's School (Wallington) - 17853 crimes (Index: 0.77)
+2025-10-20 20:16:46,724 - INFO - - Wallington High School for Girls (Wallington) - 8465 crimes (Index: 0.52)
+2025-10-20 20:16:46,724 - INFO - 
+Cluster 18 (N1 1PQ):
+2025-10-20 20:16:46,724 - INFO -   Average school-level crime (3km radius): 86268.5
+2025-10-20 20:16:46,724 - INFO - - City of London Academy, Highgate Hill (London) - 39027 crimes (Index: 0.93)
+2025-10-20 20:16:46,724 - INFO - - City of London School for Girls (London) - 133510 crimes (Index: 0.98)
+2025-10-20 20:16:46,724 - INFO - 
+Cluster 19 (KT21 1EJ):
+2025-10-20 20:16:46,724 - INFO -   Average school-level crime (3km radius): 2887.0
+2025-10-20 20:16:46,724 - INFO - - City of London Freemen's School (Surrey) - 1846 crimes (Index: 0.18)
+2025-10-20 20:16:46,724 - INFO - - Epsom College (Epsom) - 5376 crimes (Index: 0.42)
+2025-10-20 20:16:46,724 - INFO - - St John's School (Leatherhead) - 2173 crimes (Index: 0.23)
+2025-10-20 20:16:46,724 - INFO - - St Andrew's Catholic School (Leatherhead) - 2153 crimes (Index: 0.22)
+2025-10-20 20:16:46,724 - INFO - 
+Cluster 20 (BR5 1):
+2025-10-20 20:16:46,724 - INFO -   Average school-level crime (3km radius): 7120.5
+2025-10-20 20:16:46,724 - INFO - - Newstead Wood School (Orpington) - 4977 crimes (Index: 0.40)
+2025-10-20 20:16:46,725 - INFO - - Bromley High School (Bromley) - 6167 crimes (Index: 0.44)
+2025-10-20 20:16:46,725 - INFO - - St Olave's and St Saviour's Grammar School (Orpington) - 4492 crimes (Index: 0.38)
+2025-10-20 20:16:46,725 - INFO - - Eltham College (London) - 12846 crimes (Index: 0.70)
+2025-10-20 20:16:46,725 - INFO - 
+Cluster 21 (E15 2GN):
+2025-10-20 20:16:46,725 - INFO -   Average school-level crime (3km radius): 42852.8
+2025-10-20 20:16:46,725 - INFO - - Mossbourne Community Academy (London) - 49153 crimes (Index: 0.95)
+2025-10-20 20:16:46,725 - INFO - - Newham Collegiate Sixth Form Centre, City of London Academy (London) - 42693 crimes (Index: 0.94)
+2025-10-20 20:16:46,725 - INFO - - London Academy of Excellence (London) - 46036 crimes (Index: 0.95)
+2025-10-20 20:16:46,725 - INFO - - Brampton Manor Academy (London) - 33529 crimes (Index: 0.90)
+2025-10-20 20:16:46,725 - INFO - 
+Cluster 22 (EN5 5):
+2025-10-20 20:16:46,725 - INFO -   Average school-level crime (3km radius): 5485.8
+2025-10-20 20:16:46,725 - INFO - - JCoSS (New Barnet) - 5189 crimes (Index: 0.42)
+2025-10-20 20:16:46,725 - INFO - - Dame Alice Owen's School (Potters Bar) - 2241 crimes (Index: 0.24)
+2025-10-20 20:16:46,725 - INFO - - St Michael's Catholic Grammar School (London) - 11008 crimes (Index: 0.63)
+2025-10-20 20:16:46,726 - INFO - - Queen Elizabeth's School, Barnet (Barnet) - 3505 crimes (Index: 0.33)
+2025-10-20 20:16:46,726 - INFO - 
+Cluster 23 (WA14 1LA):
+2025-10-20 20:16:46,726 - INFO -   Average school-level crime (3km radius): 29.5
+2025-10-20 20:16:46,726 - INFO - - Altrincham Grammar School for Girls (Altrincham) - 23 crimes (Index: 0.01)
+2025-10-20 20:16:46,726 - INFO - - Loreto Grammar School (Altrincham) - 23 crimes (Index: 0.01)
+2025-10-20 20:16:46,726 - INFO - - Altrincham Grammar School for Boys (Altrincham) - 64 crimes (Index: 0.03)
+2025-10-20 20:16:46,726 - INFO - - Sale Grammar School (Sale) - 8 crimes (Index: 0.00)
+2025-10-20 20:16:46,726 - INFO - 
+Cluster 24 (RG1 5EX):
+2025-10-20 20:16:46,726 - INFO -   Average school-level crime (3km radius): 15472.0
+2025-10-20 20:16:46,726 - INFO - - The Abbey School Reading (Reading) - 15778 crimes (Index: 0.75)
+2025-10-20 20:16:46,726 - INFO - - Reading School (Reading) - 15093 crimes (Index: 0.74)
+2025-10-20 20:16:46,726 - INFO - - Kendrick School (Reading) - 15545 crimes (Index: 0.74)
+2025-10-20 20:16:46,726 - INFO - 
+Cluster 25 (IG8 7QW):
+2025-10-20 20:16:46,726 - INFO -   Average school-level crime (3km radius): 12315.7
+2025-10-20 20:16:46,726 - INFO - - Bancroft's School (Woodford Green) - 8103 crimes (Index: 0.50)
+2025-10-20 20:16:46,727 - INFO - - Forest School (London) - 23128 crimes (Index: 0.82)
+2025-10-20 20:16:46,727 - INFO - - Chigwell School (Chigwell) - 5716 crimes (Index: 0.43)
+2025-10-20 20:16:46,727 - INFO - 
+Cluster 26 (AL1 4ED):
+2025-10-20 20:16:46,727 - INFO -   Average school-level crime (3km radius): 4715.7
+2025-10-20 20:16:46,727 - INFO - - St Albans School (St Albans) - 4933 crimes (Index: 0.40)
+2025-10-20 20:16:46,727 - INFO - - Sandringham School (St Albans) - 3763 crimes (Index: 0.35)
+2025-10-20 20:16:46,727 - INFO - - St Albans High School for Girls (nan) - 5451 crimes (Index: 0.42)
+2025-10-20 20:16:46,727 - INFO - 
+Cluster 27 (OX14 1QE):
+2025-10-20 20:16:46,727 - INFO -   Average school-level crime (3km radius): 2090.7
+2025-10-20 20:16:46,727 - INFO - - Radley College (nan) - 993 crimes (Index: 0.12)
+2025-10-20 20:16:46,727 - INFO - - St Helen and St Katharine (Abingdon) - 2625 crimes (Index: 0.25)
+2025-10-20 20:16:46,727 - INFO - - Abingdon School (Abingdon) - 2654 crimes (Index: 0.26)
+2025-10-20 20:16:46,727 - INFO - 
+Cluster 28 (HP11 2):
+2025-10-20 20:16:46,727 - INFO -   Average school-level crime (3km radius): 8559.0
+2025-10-20 20:16:46,728 - INFO - - The Royal Grammar School, High Wycombe (High Wycombe) - 8296 crimes (Index: 0.51)
+2025-10-20 20:16:46,728 - INFO - - Wycombe Abbey (High Wycombe) - 9472 crimes (Index: 0.56)
+2025-10-20 20:16:46,728 - INFO - - Wycombe High School (High Wycombe) - 7909 crimes (Index: 0.49)
+2025-10-20 20:16:46,728 - INFO - 
+Cluster 29 (GL50 2NY):
+2025-10-20 20:16:46,728 - INFO -   Average school-level crime (3km radius): 9776.7
+2025-10-20 20:16:46,728 - INFO - - Cheltenham College (Cheltenham) - 9877 crimes (Index: 0.57)
+2025-10-20 20:16:46,728 - INFO - - Cheltenham Ladies' College (Cheltenham) - 10921 crimes (Index: 0.62)
+2025-10-20 20:16:46,728 - INFO - - Pate's Grammar School (Cheltenham) - 8532 crimes (Index: 0.53)
+2025-10-20 20:16:46,728 - INFO - 
+Cluster 30 (YO10 5AQ):
+2025-10-20 20:16:46,728 - INFO -   Average school-level crime (3km radius): 8112.0
+2025-10-20 20:16:46,729 - INFO - - OneSchool Global York Campus (York) - 7059 crimes (Index: 0.46)
+2025-10-20 20:16:46,729 - INFO - - St Peter's School 2-18 (York) - 11244 crimes (Index: 0.64)
+2025-10-20 20:16:46,729 - INFO - - Archbishop Holgate's School, A Church of England Academy (York) - 6033 crimes (Index: 0.44)
+2025-10-20 20:16:46,729 - INFO - 
+Cluster 31 (TN4 0):
+2025-10-20 20:16:46,729 - INFO -   Average school-level crime (3km radius): 3439.7
+2025-10-20 20:16:46,729 - INFO - - The Judd School (Tonbridge) - 2399 crimes (Index: 0.24)
+2025-10-20 20:16:46,729 - INFO - - Tunbridge Wells Girls' Grammar School (Tunbridge Wells) - 5010 crimes (Index: 0.40)
+2025-10-20 20:16:46,729 - INFO - - Tonbridge School (Tonbridge) - 2910 crimes (Index: 0.27)
+2025-10-20 20:16:46,729 - INFO - 
+Cluster 32 (KT10 9JJ):
+2025-10-20 20:16:46,729 - INFO -   Average school-level crime (3km radius): 1454.0
+2025-10-20 20:16:46,729 - INFO - - Notre Dame School (nan) - 1272 crimes (Index: 0.16)
+2025-10-20 20:16:46,729 - INFO - - Claremont Fan Court School (nan) - 2047 crimes (Index: 0.21)
+2025-10-20 20:16:46,729 - INFO - - Reeds School (Cobham) - 1043 crimes (Index: 0.12)
+2025-10-20 20:16:46,730 - INFO - 
+Cluster 33 (HP6 6):
+2025-10-20 20:16:46,730 - INFO -   Average school-level crime (3km radius): 1525.3
+2025-10-20 20:16:46,730 - INFO - - Dr Challoner's Grammar School (Amersham) - 1469 crimes (Index: 0.17)
+2025-10-20 20:16:46,730 - INFO - - Dr Challoner's High School (Amersham) - 1206 crimes (Index: 0.14)
+2025-10-20 20:16:46,730 - INFO - - Chesham Grammar School (Chesham) - 1901 crimes (Index: 0.18)
+2025-10-20 20:16:46,730 - INFO - 
+Cluster 34 (EX1 1):
+2025-10-20 20:16:46,730 - INFO -   Average school-level crime (3km radius): 11334.3
+2025-10-20 20:16:46,730 - INFO - - The Maynard School (Exeter) - 11435 crimes (Index: 0.65)
+2025-10-20 20:16:46,730 - INFO - - Exeter Mathematics School (Exeter) - 10755 crimes (Index: 0.61)
+2025-10-20 20:16:46,730 - INFO - - Exeter School (Exeter) - 11813 crimes (Index: 0.67)
+2025-10-20 20:16:46,730 - INFO - 
+Cluster 35 (B15 2RT):
+2025-10-20 20:16:46,730 - INFO -   Average school-level crime (3km radius): 24356.3
+2025-10-20 20:16:46,730 - INFO - - King Edward VI High School for Girls (Birmingham) - 22349 crimes (Index: 0.82)
+2025-10-20 20:16:46,730 - INFO - - St Paul's School for Girls (Birmingham) - 33324 crimes (Index: 0.90)
+2025-10-20 20:16:46,730 - INFO - - King Edward VI Camp Hill School for Girls (Birmingham) - 17396 crimes (Index: 0.76)
+2025-10-20 20:16:46,730 - INFO - 
+Cluster 36 (M14 6):
+2025-10-20 20:16:46,731 - INFO -   Average school-level crime (3km radius): 53.3
+2025-10-20 20:16:46,731 - INFO - - Manchester High School for Girls (Manchester) - 53 crimes (Index: 0.02)
+2025-10-20 20:16:46,731 - INFO - - The Manchester Grammar School (Manchester) - 60 crimes (Index: 0.03)
+2025-10-20 20:16:46,731 - INFO - - Withington Girls' School (Manchester) - 47 crimes (Index: 0.02)
+2025-10-20 20:16:46,731 - INFO - 
+Cluster 37 (WD3 1QN):
+2025-10-20 20:16:46,731 - INFO -   Average school-level crime (3km radius): 4107.3
+2025-10-20 20:16:46,731 - INFO - - St Helen's School (Northwood) - 3751 crimes (Index: 0.34)
+2025-10-20 20:16:46,731 - INFO - - Royal Masonic School for Girls (Rickmansworth) - 1957 crimes (Index: 0.19)
+2025-10-20 20:16:46,731 - INFO - - Merchant Taylors' School (Northwood) - 6614 crimes (Index: 0.44)
+2025-10-20 20:16:46,731 - INFO - 
+Cluster 38 (CV4 7AG):
+2025-10-20 20:16:46,731 - INFO -   Average school-level crime (3km radius): 2428.0
+2025-10-20 20:16:46,731 - INFO - - The National Mathematics and Science College (nan) - 2428 crimes (Index: 0.25)
+2025-10-20 20:16:46,731 - INFO - - The National Mathematics and Science College (nan) - 2428 crimes (Index: 0.25)
+2025-10-20 20:16:46,731 - INFO - 
+Cluster 39 (WR1 3QQ):
+2025-10-20 20:16:46,731 - INFO -   Average school-level crime (3km radius): 10273.5
+2025-10-20 20:16:46,731 - INFO - - The King's School (nan) - 9951 crimes (Index: 0.58)
+2025-10-20 20:16:46,732 - INFO - - Royal Grammar School Worcester (Worcester) - 10596 crimes (Index: 0.60)
+2025-10-20 20:16:46,732 - INFO - 
+Cluster 40 (NR1 3):
+2025-10-20 20:16:46,732 - INFO -   Average school-level crime (3km radius): 13202.5
+2025-10-20 20:16:46,732 - INFO - - Norwich School (Norwich) - 14309 crimes (Index: 0.73)
+2025-10-20 20:16:46,732 - INFO - - Norwich High School for Girls (nan) - 12096 crimes (Index: 0.68)
+2025-10-20 20:16:46,732 - INFO - 
+Cluster 41 (NG1 4HX):
+2025-10-20 20:16:46,732 - INFO -   Average school-level crime (3km radius): 27284.0
+2025-10-20 20:16:46,732 - INFO - - Nottingham Girls' High School (nan) - 27250 crimes (Index: 0.86)
+2025-10-20 20:16:46,732 - INFO - - Nottingham High School (Nottingham) - 27318 crimes (Index: 0.87)
+2025-10-20 20:16:46,732 - INFO - 
+Cluster 42 (SO23 0JR):
+2025-10-20 20:16:46,732 - INFO -   Average school-level crime (3km radius): 3865.0
+2025-10-20 20:16:46,732 - INFO - - St Swithuns (nan) - 3302 crimes (Index: 0.31)
+2025-10-20 20:16:46,732 - INFO - - Winchester College (Winchester) - 4428 crimes (Index: 0.38)
+2025-10-20 20:16:46,732 - INFO - 
+Cluster 43 (CV34 6):
+2025-10-20 20:16:46,732 - INFO -   Average school-level crime (3km radius): 3628.0
+2025-10-20 20:16:46,732 - INFO - - King's High School (Warwickshire) - 2926 crimes (Index: 0.27)
+2025-10-20 20:16:46,733 - INFO - - Warwick School (Warwick) - 4330 crimes (Index: 0.37)
+2025-10-20 20:16:46,733 - INFO - 
+Cluster 44 (CW8 1):
+2025-10-20 20:16:46,733 - INFO -   Average school-level crime (3km radius): 3307.5
+2025-10-20 20:16:46,733 - INFO - - The Grange School (Northwich) - 3141 crimes (Index: 0.29)
+2025-10-20 20:16:46,733 - INFO - - Sir John Deane's Sixth Form College (Northwich) - 3474 crimes (Index: 0.33)
+2025-10-20 20:16:46,733 - INFO - 
+Cluster 45 (CM1 1RJ):
+2025-10-20 20:16:46,733 - INFO -   Average school-level crime (3km radius): 10950.5
+2025-10-20 20:16:46,733 - INFO - - Chelmsford County High School for Girls (Chelmsford) - 10908 crimes (Index: 0.62)
+2025-10-20 20:16:46,733 - INFO - - King Edward VI Grammar School, Chelmsford (Chelmsford) - 10993 crimes (Index: 0.63)
+2025-10-20 20:16:46,733 - INFO - 
+Cluster 46 (CV37 9QL):
+2025-10-20 20:16:46,733 - INFO -   Average school-level crime (3km radius): 3132.0
+2025-10-20 20:16:46,733 - INFO - - King Edward VI School (Stratford-upon-Avon) - 3214 crimes (Index: 0.30)
+2025-10-20 20:16:46,733 - INFO - - Stratford Girls' Grammar School (Stratford-upon-Avon) - 3050 crimes (Index: 0.29)
+2025-10-20 20:16:46,733 - INFO - 
+Cluster 47 (L15 2HD):
+2025-10-20 20:16:46,733 - INFO -   Average school-level crime (3km radius): 23775.0
+2025-10-20 20:16:46,733 - INFO - - The Blue Coat School (Liverpool) - 13434 crimes (Index: 0.73)
+2025-10-20 20:16:46,734 - INFO - - University of Liverpool Mathematics School (Liverpool) - 34116 crimes (Index: 0.91)
+2025-10-20 20:16:46,734 - INFO - 
+Cluster 48 (CH4 8JB):
+2025-10-20 20:16:46,734 - INFO -   Average school-level crime (3km radius): 6488.0
+2025-10-20 20:16:46,734 - INFO - - The Queen's School (Chester) - 9517 crimes (Index: 0.56)
+2025-10-20 20:16:46,734 - INFO - - The King's School (Chester) - 3459 crimes (Index: 0.32)
+2025-10-20 20:16:46,734 - INFO - 
+Cluster 49 (RH15 9):
+2025-10-20 20:16:46,734 - INFO -   Average school-level crime (3km radius): 2483.5
+2025-10-20 20:16:46,734 - INFO - - Hurstpierpoint College (Hassocks) - 2226 crimes (Index: 0.23)
+2025-10-20 20:16:46,734 - INFO - - Burgess Hill Girls (Burgess Hill) - 2741 crimes (Index: 0.26)
+2025-10-20 20:16:46,734 - INFO - 
+Cluster 50 (MK41 7RR):
+2025-10-20 20:16:46,734 - INFO -   Average school-level crime (3km radius): 11431.5
+2025-10-20 20:16:46,734 - INFO - - Bedford School (Bedford) - 12225 crimes (Index: 0.68)
+2025-10-20 20:16:46,734 - INFO - - Bedford Modern School (Bedford) - 10638 crimes (Index: 0.61)
+2025-10-20 20:16:46,734 - INFO - 
+Cluster 51 (BN2 5RD):
+2025-10-20 20:16:46,734 - INFO -   Average school-level crime (3km radius): 12369.0
+2025-10-20 20:16:46,735 - INFO - - Brighton College (Brighton) - 20786 crimes (Index: 0.79)
+2025-10-20 20:16:46,735 - INFO - - Roedean School (Brighton) - 3952 crimes (Index: 0.36)
+2025-10-20 20:16:46,735 - INFO - 
+Cluster 52 (SL3 9):
+2025-10-20 20:16:46,735 - INFO -   Average school-level crime (3km radius): 9607.5
+2025-10-20 20:16:46,735 - INFO - - Eton College (Windsor) - 11300 crimes (Index: 0.64)
+2025-10-20 20:16:46,735 - INFO - - Langley Grammar School (Langley) - 7915 crimes (Index: 0.49)
+2025-10-20 20:16:46,735 - INFO - 
+Cluster 53 (SP1 2BY):
+2025-10-20 20:16:46,735 - INFO -   Average school-level crime (3km radius): 3840.0
+2025-10-20 20:16:46,735 - INFO - - Bishop Wordsworth's Church of England Grammar School (Salisbury) - 3894 crimes (Index: 0.35)
+2025-10-20 20:16:46,735 - INFO - - Godolphin School (nan) - 3786 crimes (Index: 0.35)
+2025-10-20 20:16:46,735 - INFO - 
+Cluster 54 (KT15 2HL):
+2025-10-20 20:16:46,735 - INFO -   Average school-level crime (3km radius): 4144.0
+2025-10-20 20:16:46,736 - INFO - - Sir William Perkins's School (nan) - 3923 crimes (Index: 0.36)
+2025-10-20 20:16:46,736 - INFO - - St George's College Weybridge (Addlestone) - 4365 crimes (Index: 0.38)
+2025-10-20 20:16:46,736 - INFO - 
+Cluster 55 (CR3 6):
+2025-10-20 20:16:46,736 - INFO -   Average school-level crime (3km radius): 1705.0
+2025-10-20 20:16:46,736 - INFO - - Caterham School (Caterham) - 2029 crimes (Index: 0.21)
+2025-10-20 20:16:46,736 - INFO - - Woldingham School (Caterham) - 1381 crimes (Index: 0.16)
+2025-10-20 20:16:46,736 - INFO - 
+Cluster 56 (B73 6):
+2025-10-20 20:16:46,736 - INFO -   Average school-level crime (3km radius): 7041.0
+2025-10-20 20:16:46,736 - INFO - - Sutton Coldfield Grammar School for Girls (Sutton Coldfield) - 8989 crimes (Index: 0.55)
+2025-10-20 20:16:46,736 - INFO - - Bishop Vesey's Grammar School (Sutton Coldfield) - 5093 crimes (Index: 0.41)
+2025-10-20 20:16:46,736 - INFO - 
+Cluster 57 (BA1 5):
+2025-10-20 20:16:46,736 - INFO -   Average school-level crime (3km radius): 7237.5
+2025-10-20 20:16:46,736 - INFO - - Kingswood School (Bath) - 7628 crimes (Index: 0.47)
+2025-10-20 20:16:46,736 - INFO - - King Edward's School (nan) - 6847 crimes (Index: 0.45)
+2025-10-20 20:16:46,737 - INFO - 
+Overall Crime Statistics (per school, 3km radius):
+2025-10-20 20:16:46,737 - INFO - Maximum crimes around any school: 145281
+2025-10-20 20:16:46,737 - INFO - Minimum crimes around any school: 8
+2025-10-20 20:16:46,737 - INFO - Average crimes per school area: 15129.4
+2025-10-20 20:16:46,738 - INFO - Highest crime area: City of London School (London)
+2025-10-20 20:16:46,738 - INFO - Lowest crime area: Sale Grammar School (Sale)
