@@ -143,7 +143,7 @@ School CSVs → Consolidate → Filter by percentile → Geocode (AWS) → Calcu
 ### Web App (`school_finder.html`)
 - Mobile-friendly standalone HTML
 - Location-based search (GPS or address)
-- 5km radius filtering
+- 10km radius filtering
 - Works offline after initial load
 - Use case: On-the-go school searches
 

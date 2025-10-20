@@ -359,7 +359,7 @@ def get_html_template():
     <script>
         // Configuration
         const CONFIG = {
-            RADIUS_KM: 5,
+            RADIUS_KM: 10,
             A_STAR_THRESHOLD: 50,
             A_THRESHOLD: 40,
             COLORS: {
