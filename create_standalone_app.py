@@ -575,7 +575,7 @@ def get_html_template():
                 className: '',
                 iconSize: [30, 40],
                 iconAnchor: [15, 40],
-                popupAnchor: [0, -40]
+                popupAnchor: [15, 20]
             });
         }
 
