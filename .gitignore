@@ -1,7 +1,15 @@
-__pycache__/*
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Data files
 *.csv.gz
 *.csv
 *.log
+
+# Generated output
 schools_map.html
 processed_school_data.csv
 geocoding_cache.json
