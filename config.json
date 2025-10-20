@@ -19,12 +19,7 @@
     ]
   },
   "crime_processing": {
-    "columns": [
-      "Month",
-      "Longitude",
-      "Latitude",
-      "Crime type"
-    ],
+    "columns": ["Month", "Longitude", "Latitude", "Crime type"],
     "compress_output": true
   },
   "geocoding": {
@@ -36,7 +31,7 @@
     "crime_cache_file": "crime_cache.json"
   },
   "filtering": {
-    "percentile": 0.90,
+    "percentile": 0.8,
     "min_age_threshold": 7
   },
   "grading": {
@@ -75,10 +70,7 @@
       "TB3PTSE",
       "YEAR"
     ],
-    "numeric_columns": [
-      "TB3PTSE",
-      "TALLPPE_ALEV_1618"
-    ]
+    "numeric_columns": ["TB3PTSE", "TALLPPE_ALEV_1618"]
   },
   "output": {
     "processed_csv": "processed_school_data.csv",
