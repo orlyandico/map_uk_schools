@@ -791,6 +791,14 @@ def get_html_template():
             document.getElementById('schoolDetail').classList.remove('show');
         }
 
+        // Update schools based on map center
+        function updateSchoolsForCurrentView() {
+            if (!map || schoolsData.length === 0) return;
+            
+            const center = map.getCenter();
+            displaySchools(center.lat, center.lng);
+        }
+
         // Event listeners
         document.getElementById('locationBtn').addEventListener('click', useCurrentLocation);
         document.getElementById('searchBtn').addEventListener('click', searchAddress);
@@ -800,6 +808,9 @@ def get_html_template():
             }
         });
         document.getElementById('closeDetail').addEventListener('click', hideSchoolDetail);
+
+        // Map event listeners
+        map.on('moveend', updateSchoolsForCurrentView);
 
         // Initialize
         initMap();
