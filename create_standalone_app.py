@@ -234,7 +234,7 @@ def get_html_template():
             position: fixed;
             bottom: 10px;
             right: 10px;
-            width: 400px;
+            width: 320px;
             max-width: calc(100vw - 20px);
             max-height: 60vh;
             overflow-y: auto;
@@ -303,6 +303,11 @@ def get_html_template():
                 bottom: 5px;
                 right: 5px;
             }
+        }
+
+        /* Scale control positioning */
+        .leaflet-control-scale {
+            margin-bottom: 10px !important;
         }
 
         /* Custom popup styles */
@@ -437,6 +442,7 @@ def get_html_template():
         let currentMarkers = [];
         let currentCircle = null;
         let currentCenter = null;
+        let reticleCircle = null;
 
         // Initialize map
         function initMap() {
@@ -446,6 +452,28 @@ def get_html_template():
                 attribution: '© OpenStreetMap contributors',
                 maxZoom: 19
             }).addTo(map);
+
+            // Add scale control to bottom left
+            L.control.scale({
+                position: 'bottomleft',
+                metric: true,
+                imperial: false,
+                maxWidth: 150
+            }).addTo(map);
+
+            // Create permanent reticle circle
+            const center = map.getCenter();
+            reticleCircle = L.circle([center.lat, center.lng], {
+                radius: CONFIG.RADIUS_KM * 1000,
+                color: '#4169E1',
+                fillColor: '#4169E1',
+                fillOpacity: 0.1,
+                weight: 1
+            }).addTo(map);
+
+            // Add map event listeners after map is created
+            map.on('moveend', updateSchoolsForCurrentView);
+            map.on('move', updateReticlePosition);
         }
 
         // Load school data (embedded)
@@ -635,25 +663,20 @@ def get_html_template():
         }
 
         // Display schools on map
-        function displaySchools(centerLat, centerLon) {
-            // Clear existing markers and circle
+        function displaySchools(centerLat, centerLon, isAddressSearch = false) {
+            // Clear existing markers only (keep reticle circle)
             currentMarkers.forEach(marker => map.removeLayer(marker));
             currentMarkers = [];
             if (currentCircle) {
                 map.removeLayer(currentCircle);
+                currentCircle = null;
             }
 
             // Store current center
             currentCenter = { lat: centerLat, lon: centerLon };
 
-            // Draw radius circle
-            currentCircle = L.circle([centerLat, centerLon], {
-                radius: CONFIG.RADIUS_KM * 1000,
-                color: '#4169E1',
-                fillColor: '#4169E1',
-                fillOpacity: 0.1,
-                weight: 2
-            }).addTo(map);
+            // Update reticle position
+            reticleCircle.setLatLng([centerLat, centerLon]);
 
             // Get schools in radius
             const nearbySchools = getSchoolsInRadius(centerLat, centerLon, CONFIG.RADIUS_KM);
@@ -675,8 +698,13 @@ def get_html_template():
             updateSchoolCount(nearbySchools.length);
             updateStatus(`Showing ${nearbySchools.length} schools within ${CONFIG.RADIUS_KM}km`);
 
-            // Fit map to circle bounds
-            map.fitBounds(currentCircle.getBounds(), { padding: [50, 50] });
+            // Zoom appropriately for address searches
+            if (isAddressSearch) {
+                // Set zoom level so circle fills most of vertical height
+                // Approximate zoom level for 10km radius to fill ~80% of screen height
+                const targetZoom = 11;
+                map.setView([centerLat, centerLon], targetZoom);
+            }
         }
 
         // Use current location
@@ -692,7 +720,7 @@ def get_html_template():
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     showLoading(false);
-                    displaySchools(position.coords.latitude, position.coords.longitude);
+                    displaySchools(position.coords.latitude, position.coords.longitude, true);
                 },
                 (error) => {
                     showLoading(false);
@@ -750,7 +778,7 @@ def get_html_template():
                 }
 
                 const location = results[0];
-                displaySchools(parseFloat(location.lat), parseFloat(location.lon));
+                displaySchools(parseFloat(location.lat), parseFloat(location.lon), true);
 
             } catch (error) {
                 showLoading(false);
@@ -791,6 +819,14 @@ def get_html_template():
             document.getElementById('schoolDetail').classList.remove('show');
         }
 
+        // Update reticle position during map movement
+        function updateReticlePosition() {
+            if (reticleCircle && map) {
+                const center = map.getCenter();
+                reticleCircle.setLatLng([center.lat, center.lng]);
+            }
+        }
+
         // Update schools based on map center
         function updateSchoolsForCurrentView() {
             if (!map || schoolsData.length === 0) return;
@@ -808,9 +844,6 @@ def get_html_template():
             }
         });
         document.getElementById('closeDetail').addEventListener('click', hideSchoolDetail);
-
-        // Map event listeners
-        map.on('moveend', updateSchoolsForCurrentView);
 
         // Initialize
         initMap();

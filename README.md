@@ -144,6 +144,9 @@ School CSVs → Consolidate → Filter by percentile → Geocode (AWS) → Calcu
 - Mobile-friendly standalone HTML
 - Location-based search (GPS or address)
 - 10km radius filtering with automatic updates when scrolling map
+- Persistent crosshair/reticle showing search radius
+- Auto-zoom to appropriate level for address searches
+- Distance scale ruler for reference
 - Works offline after initial load
 - Use case: On-the-go school searches
 
