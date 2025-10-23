@@ -4,6 +4,8 @@ Interactive map tool for analyzing UK schools by A-level performance and local c
 
 **[Live Demo: Web App →](http://web.andico.org/school_finder.html)**
 
+![School Finder Screenshot](schoolfinder.png)
+
 **[Live Demo: Static Cluster Map →](http://web.andico.org/schools_map.html)**
 
 ![Schools Map Screenshot](schools_map.png)
