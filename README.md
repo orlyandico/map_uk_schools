@@ -144,7 +144,7 @@ School CSVs → Consolidate → Filter by percentile → Geocode (AWS) → Calcu
 - Mobile-friendly standalone HTML
 - Location-based search (GPS or address)
 - Dynamic radius filtering with automatic updates when scrolling map
-- Adaptive crosshair/reticle that adjusts radius based on zoom level (max 60% of screen)
+- Adaptive crosshair/reticle that adjusts radius based on zoom level (5km max, 500m min, max 60% of screen)
 - Auto-zoom to appropriate level for address searches
 - Distance scale ruler for reference
 - Works offline after initial load

@@ -419,7 +419,8 @@ def get_html_template():
     <script>
         // Configuration
         const CONFIG = {
-            RADIUS_KM: 10,
+            RADIUS_KM: 5,
+            MIN_RADIUS_KM: 0.5,
             A_STAR_THRESHOLD: 50,
             A_THRESHOLD: 40,
             COLORS: {
@@ -702,8 +703,8 @@ def get_html_template():
             // Zoom appropriately for address searches
             if (isAddressSearch) {
                 // Set zoom level so circle fills most of vertical height
-                // Approximate zoom level for 10km radius to fill ~80% of screen height
-                const targetZoom = 11;
+                // Approximate zoom level for 5km radius to fill ~60% of screen height
+                const targetZoom = 12;
                 map.setView([centerLat, centerLon], targetZoom);
             }
         }
@@ -842,8 +843,23 @@ def get_html_template():
             const metersPerPixel = 40075016.686 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom + 8);
             const maxRadiusMeters = maxRadiusPixels * metersPerPixel;
             
-            // Use the smaller of 10km or the screen-constrained radius
-            const actualRadius = Math.min(CONFIG.RADIUS_KM * 1000, maxRadiusMeters);
+            // Use the smaller of 5km or the screen-constrained radius, but never less than 500m
+            const constrainedRadius = Math.min(CONFIG.RADIUS_KM * 1000, maxRadiusMeters);
+            const actualRadius = Math.max(constrainedRadius, CONFIG.MIN_RADIUS_KM * 1000);
+            
+            // If we hit the minimum radius limit, prevent further zooming
+            if (constrainedRadius < CONFIG.MIN_RADIUS_KM * 1000) {
+                // Calculate the maximum allowed zoom for 500m radius
+                const minRadiusPixels = (CONFIG.MIN_RADIUS_KM * 1000) / metersPerPixel;
+                const minCircleSize = minRadiusPixels * 2;
+                if (minCircleSize > maxCircleSize) {
+                    // Zoom out to maintain 500m minimum
+                    const requiredMetersPerPixel = (CONFIG.MIN_RADIUS_KM * 1000) / maxRadiusPixels;
+                    const requiredZoom = Math.log2(40075016.686 * Math.cos(lat * Math.PI / 180) / (requiredMetersPerPixel * 256));
+                    map.setZoom(Math.floor(requiredZoom));
+                    return;
+                }
+            }
             
             // Update circle radius
             reticleCircle.setRadius(actualRadius);

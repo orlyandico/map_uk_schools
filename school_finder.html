@@ -353,7 +353,7 @@
     <script>
         // Configuration
         const CONFIG = {
-            RADIUS_KM: 10,
+            RADIUS_KM: 5,
             A_STAR_THRESHOLD: 50,
             A_THRESHOLD: 40,
             COLORS: {
@@ -16293,8 +16293,8 @@
             // Zoom appropriately for address searches
             if (isAddressSearch) {
                 // Set zoom level so circle fills most of vertical height
-                // Approximate zoom level for 10km radius to fill ~80% of screen height
-                const targetZoom = 11;
+                // Approximate zoom level for 5km radius to fill ~60% of screen height
+                const targetZoom = 12;
                 map.setView([centerLat, centerLon], targetZoom);
             }
         }
