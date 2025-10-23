@@ -1698,3 +1698,64 @@ Generated files:
 2025-10-20 22:37:15,766 - INFO - 
 Next step: Run 'python3 create_standalone_app.py' to generate web app
 2025-10-20 22:37:15,766 - INFO - ==================================================
+2025-10-23 18:23:00,366 - INFO - ✓ Configuration validated successfully
+2025-10-23 18:23:00,368 - INFO - Loaded 1020 cached geocoded addresses
+2025-10-23 18:23:00,511 - INFO - Loaded 1009 cached crime calculations
+2025-10-23 18:23:00,511 - INFO - Loading crime data...
+2025-10-23 18:23:04,932 - INFO - Loaded 10775095 crime records
+2025-10-23 18:23:04,932 - INFO - Found 3 data files: ['2022-2023_england_ks5final.csv.gz', '2023-2024_england_ks5final.csv.gz', '2021-2022_england_ks5final.csv.gz']
+2025-10-23 18:23:05,218 - INFO - Loaded 2971 rows from 2021-2022_england_ks5final.csv.gz (year: 2021)
+2025-10-23 18:23:05,442 - INFO - Loaded 2973 rows from 2022-2023_england_ks5final.csv.gz (year: 2022)
+2025-10-23 18:23:05,700 - INFO - Loaded 2954 rows from 2023-2024_england_ks5final.csv.gz (year: 2023)
+2025-10-23 18:23:05,789 - INFO - Combined total rows: 8898
+2025-10-23 18:23:08,417 - INFO - Consolidated to 2543 unique schools
+2025-10-23 18:23:08,425 - INFO - 
+============================================================
+2025-10-23 18:23:08,425 - INFO - TB3PTSE Score Distribution by Decile
+2025-10-23 18:23:08,425 - INFO - ============================================================
+2025-10-23 18:23:08,425 - INFO - Percentile   Score      Grade    Schools   
+2025-10-23 18:23:08,425 - INFO - ------------------------------------------------------------
+2025-10-23 18:23:08,428 - INFO - Min             4.07    ≤B         2543
+2025-10-23 18:23:08,429 - INFO - P10            26.75    ≤B         2288
+2025-10-23 18:23:08,430 - INFO - P20            29.78    ≤B         2035
+2025-10-23 18:23:08,431 - INFO - P30            31.82    ≤B         1780
+2025-10-23 18:23:08,432 - INFO - P40            33.47    ≤B         1526
+2025-10-23 18:23:08,433 - INFO - P50            34.95    ≤B         1272
+2025-10-23 18:23:08,434 - INFO - P60            36.33    ≤B         1017
+2025-10-23 18:23:08,435 - INFO - P70            37.93    ≤B          763
+2025-10-23 18:23:08,436 - INFO - P80            39.93    ≤B          509
+2025-10-23 18:23:08,437 - INFO - P90            43.56    A           255
+2025-10-23 18:23:08,437 - INFO - Max            55.89    A*            1
+2025-10-23 18:23:08,437 - INFO - ------------------------------------------------------------
+2025-10-23 18:23:08,437 - INFO - Marker color thresholds (for visualization): A* ≥50, A ≥40, ≤B <40
+2025-10-23 18:23:08,438 - INFO - Note: Scores reflect average points across best 3 A-levels (A*=60, A=50, B=40)
+2025-10-23 18:23:08,438 - INFO - ============================================================
+
+2025-10-23 18:23:08,439 - INFO - Filtering at P60 (score ≥36.33): 1017 schools selected
+2025-10-23 18:23:08,450 - INFO - Processing 1017 addresses (geocoding and crime stats)...
+2025-10-23 18:23:08,490 - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-10-23 18:23:56,532 - INFO - Processing complete - Geocoding: 927 cached, 90 new | Crime stats: 89 calculated
+2025-10-23 18:23:56,537 - INFO - Saved 1110 unique addresses to cache
+2025-10-23 18:23:56,698 - INFO - Saved 1029 crime calculations to cache
+2025-10-23 18:23:56,700 - INFO - Schools with valid coordinates: 1016
+2025-10-23 18:23:56,726 - INFO - Saved processed data to processed_school_data.csv
+2025-10-23 18:23:56,727 - INFO - Extracting crime statistics from geocoding cache...
+2025-10-23 18:23:56,728 - INFO - 
+==================================================
+2025-10-23 18:23:56,728 - INFO - PROCESSING COMPLETE
+2025-10-23 18:23:56,728 - INFO - ==================================================
+2025-10-23 18:23:56,728 - INFO - Total schools processed: 1016
+2025-10-23 18:23:56,728 - INFO - Schools with crime data: 1016
+2025-10-23 18:23:56,728 - INFO - 
+Crime Statistics (3km radius):
+2025-10-23 18:23:56,729 - INFO -   Min: 0 crimes
+2025-10-23 18:23:56,729 - INFO -   Max: 145281 crimes
+2025-10-23 18:23:56,729 - INFO -   Avg: 10978.1 crimes
+2025-10-23 18:23:56,729 - INFO - 
+Generated files:
+2025-10-23 18:23:56,729 - INFO -   - processed_school_data.csv
+2025-10-23 18:23:56,729 - INFO -   - geocoding_cache.json
+2025-10-23 18:23:56,729 - INFO -   - crime_cache.json
+2025-10-23 18:23:56,729 - INFO - 
+Next step: Run 'python3 create_standalone_app.py' to generate web app
+2025-10-23 18:23:56,729 - INFO - ==================================================

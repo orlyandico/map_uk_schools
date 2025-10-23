@@ -31,7 +31,7 @@
     "crime_cache_file": "crime_cache.json"
   },
   "filtering": {
-    "percentile": 0.8,
+    "percentile": 0.6,
     "min_age_threshold": 7
   },
   "grading": {
