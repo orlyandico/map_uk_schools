@@ -474,6 +474,7 @@ def get_html_template():
             // Add map event listeners after map is created
             map.on('moveend', updateSchoolsForCurrentView);
             map.on('move', updateReticlePosition);
+            map.on('zoomend', adjustZoomForCircleSize);
         }
 
         // Load school data (embedded)
@@ -663,7 +664,7 @@ def get_html_template():
         }
 
         // Display schools on map
-        function displaySchools(centerLat, centerLon, isAddressSearch = false) {
+        function displaySchools(centerLat, centerLon, isAddressSearch = false, radiusKm = CONFIG.RADIUS_KM) {
             // Clear existing markers only (keep reticle circle)
             currentMarkers.forEach(marker => map.removeLayer(marker));
             currentMarkers = [];
@@ -679,7 +680,7 @@ def get_html_template():
             reticleCircle.setLatLng([centerLat, centerLon]);
 
             // Get schools in radius
-            const nearbySchools = getSchoolsInRadius(centerLat, centerLon, CONFIG.RADIUS_KM);
+            const nearbySchools = getSchoolsInRadius(centerLat, centerLon, radiusKm);
 
             // Add markers for each school
             nearbySchools.forEach(school => {
@@ -696,7 +697,7 @@ def get_html_template():
 
             // Update UI
             updateSchoolCount(nearbySchools.length);
-            updateStatus(`Showing ${nearbySchools.length} schools within ${CONFIG.RADIUS_KM}km`);
+            updateStatus(`Showing ${nearbySchools.length} schools within ${radiusKm.toFixed(1)}km`);
 
             // Zoom appropriately for address searches
             if (isAddressSearch) {
@@ -819,6 +820,35 @@ def get_html_template():
             document.getElementById('schoolDetail').classList.remove('show');
         }
 
+        // Adjust circle radius based on zoom level to maintain 60% screen limit
+        function adjustZoomForCircleSize() {
+            if (!map || !reticleCircle) return;
+            
+            const mapSize = map.getSize();
+            const minDimension = Math.min(mapSize.x, mapSize.y);
+            const maxCircleSize = minDimension * 0.6; // 60% of smaller dimension
+            
+            const center = map.getCenter();
+            // Calculate what radius would give us the max circle size in pixels
+            const maxRadiusPixels = maxCircleSize / 2;
+            
+            // Convert max pixel radius to meters at current zoom/location
+            const lat = center.lat;
+            const lng = center.lng;
+            const earthRadius = 6371000; // meters
+            
+            // Calculate degrees per pixel at current zoom
+            const zoom = map.getZoom();
+            const metersPerPixel = 40075016.686 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom + 8);
+            const maxRadiusMeters = maxRadiusPixels * metersPerPixel;
+            
+            // Use the smaller of 10km or the screen-constrained radius
+            const actualRadius = Math.min(CONFIG.RADIUS_KM * 1000, maxRadiusMeters);
+            
+            // Update circle radius
+            reticleCircle.setRadius(actualRadius);
+        }
+
         // Update reticle position during map movement
         function updateReticlePosition() {
             if (reticleCircle && map) {
@@ -832,7 +862,9 @@ def get_html_template():
             if (!map || schoolsData.length === 0) return;
             
             const center = map.getCenter();
-            displaySchools(center.lat, center.lng);
+            // Get actual radius from the circle (may be smaller than 10km at high zoom)
+            const actualRadiusKm = reticleCircle.getRadius() / 1000;
+            displaySchools(center.lat, center.lng, false, actualRadiusKm);
         }
 
         // Event listeners
