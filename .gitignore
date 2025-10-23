@@ -14,4 +14,5 @@ schools_map.html
 processed_school_data.csv
 geocoding_cache.json
 crime_cache.json
+*.log
 
