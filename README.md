@@ -23,16 +23,22 @@ pip install pandas boto3 tqdm folium scikit-learn numpy
 ### 2. Download School Data
 
 ```bash
-pip install httpx   # only extra dep needed for the downloader
+pip install httpx pandas   # only extra deps needed for the downloader
 python3 ks5_download_data.py
 ```
 
-This fetches the last 3 years of 16-18 final results from the DfE and saves them as:
-- `2023-2024_england_ks5final.csv.gz`
-- `2022-2023_england_ks5final.csv.gz`
-- `2021-2022_england_ks5final.csv.gz`
+This fetches 16-18 final results from the DfE via the Explore Education Statistics API.
 
-The script is idempotent — re-running skips files already present and complete. If automatic download fails, it prints manual instructions.
+**EES availability:** the school-level summary file was introduced in the 2023/24 EES release. The script downloads automatically for 2023-24 onwards and prints manual instructions for earlier years.
+
+For 2022-23 and earlier, download manually from [compare-school-performance.service.gov.uk/download-data](https://www.compare-school-performance.service.gov.uk/download-data/): select the year → "All of England" → "16-18 results (final)" → CSV, then:
+
+```bash
+gzip 2022-2023_england_ks5final.csv
+gzip 2021-2022_england_ks5final.csv
+```
+
+The script is idempotent — re-running skips files already present and complete.
 
 Optional flags:
 ```bash
@@ -285,10 +291,10 @@ Crime filtering is configurable via `config.json` → `crime.excluded_crime_type
 
 ## Updating Data
 
-When new school year data is released:
+When new school year data is released (2023-24 onwards downloads automatically):
 
 ```bash
-# Download new year (skips years already present)
+# Download new year from EES (skips years already present)
 python3 ks5_download_data.py --years 2024-2025
 
 # Regenerate (existing schools use cached geocoding)
