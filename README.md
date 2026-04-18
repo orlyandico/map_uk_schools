@@ -22,15 +22,22 @@ pip install pandas boto3 tqdm folium scikit-learn numpy
 
 ### 2. Download School Data
 
-From https://www.compare-school-performance.service.gov.uk/download-data/:
-- Select years 2021-2024
-- Select "All of England" → "16-18 results (final)" → CSV format
-- Gzip the files:
-
 ```bash
-gzip 2021-2022_england_ks5final.csv
-gzip 2022-2023_england_ks5final.csv
-gzip 2023-2024_england_ks5final.csv
+pip install httpx   # only extra dep needed for the downloader
+python3 ks5_download_data.py
+```
+
+This fetches the last 3 years of 16-18 final results from the DfE and saves them as:
+- `2023-2024_england_ks5final.csv.gz`
+- `2022-2023_england_ks5final.csv.gz`
+- `2021-2022_england_ks5final.csv.gz`
+
+The script is idempotent — re-running skips files already present and complete. If automatic download fails, it prints manual instructions.
+
+Optional flags:
+```bash
+python3 ks5_download_data.py --years 2023-2024        # single year only
+python3 ks5_download_data.py --output-dir data/       # write to a subdirectory
 ```
 
 ### 3. Download and Process Crime Data (Optional)
@@ -111,6 +118,7 @@ aws s3 cp school_finder.html s3://your-bucket/index.html \
 
 ### Scripts
 
+- **`ks5_download_data.py`** — Downloads KS5 16-18 final results CSVs from DfE (idempotent)
 - **`school_data_lib.py`** (~885 lines) - Shared library with all data processing functions
 - **`consolidate_crime_data.py`** (~150 lines) - Consolidates downloaded crime CSV files
 - **`plot_schools.py`** (~725 lines) - Generates static cluster map using Folium
@@ -120,6 +128,8 @@ aws s3 cp school_finder.html s3://your-bucket/index.html \
 ### Data Flow
 
 ```
+ks5_download_data.py → 20XX-20XX_england_ks5final.csv.gz (×3)
+                                           ↓
 Crime CSVs → consolidate_crime_data.py → combined_crimes.csv.gz
                                                     ↓
 School CSVs → Consolidate → Filter by percentile → Geocode (AWS) → Calculate crime stats → Cache
@@ -193,6 +203,7 @@ Edit `config.json` to customize:
 
 ```
 map_uk_schools/
+├── ks5_download_data.py           # KS5 data downloader (idempotent)
 ├── school_data_lib.py             # Shared library
 ├── plot_schools.py                # Static map generator
 ├── generate_school_data.py        # Data processor
@@ -200,7 +211,9 @@ map_uk_schools/
 ├── consolidate_crime_data.py      # Crime data consolidator
 ├── config.json                    # Settings
 │
-├── 2021-2022_england_ks5final.csv.gz  # Downloaded data
+├── 2023-2024_england_ks5final.csv.gz  # Downloaded KS5 data
+├── 2022-2023_england_ks5final.csv.gz
+├── 2021-2022_england_ks5final.csv.gz
 ├── combined_crimes.csv.gz             # Generated crime data
 │
 ├── processed_school_data.csv      # Generated outputs
@@ -275,7 +288,8 @@ Crime filtering is configurable via `config.json` → `crime.excluded_crime_type
 When new school year data is released:
 
 ```bash
-gzip 2024-2025_england_ks5final.csv
+# Download new year (skips years already present)
+python3 ks5_download_data.py --years 2024-2025
 
 # Regenerate (existing schools use cached geocoding)
 python3 plot_schools.py              # or generate_school_data.py
@@ -359,32 +373,34 @@ A parallel set of scripts (all prefixed `ks2_`) generates an equivalent interact
 | Metric | TB3PTSE (avg best 3 A-levels) | % meeting expected standard (R+W+M combined) |
 | Colour scheme | Navy/Blue/Royal Blue (state), Red/Orange/Yellow (independent) | Dark green / Green / Light green |
 
-### 1. Download KS2 Performance Data
+### 1. Download KS2 Data
 
-From [explore-education-statistics.service.gov.uk](https://explore-education-statistics.service.gov.uk/find-statistics/key-stage-2-attainment/2023-24):
-
-- Go to **"Explore and download data"** → download the **"Key stage 2 institution level — Schools (performance)"** CSV
-  - Dataset ID: `b361b4c3-21b9-46fd-9126-b8060c6a40e2` (covers 2022/23 and 2023/24)
-  - Save as `ks2_school_attainment_data.csv`
-- For the third year (2021/22): go to the [2021/22 release](https://explore-education-statistics.service.gov.uk/find-statistics/key-stage-2-attainment/2021-22) → **"Download all data (ZIP)"**, extract the school-level performance CSV, save as `ks2_school_attainment_2122.csv`
-
-Or run the download script which attempts this automatically:
+Run the download script — it fetches all three years of EES data and the GIAS establishment list automatically:
 
 ```bash
-pip install httpx   # only extra dep needed for the downloader
+pip install httpx   # only extra dep needed
 python3 ks2_download_data.py
 ```
 
-### 2. Download School Addresses (GIAS)
+This produces:
+- `ks2_school_attainment_202324.csv` — EES 2023/24 (via content API)
+- `ks2_school_attainment_202223.csv` — EES 2022/23
+- `ks2_school_attainment_202122.csv` — EES 2021/22
+- `gias_establishments.csv` — GIAS all-establishments list
 
-From [get-information-schools.service.gov.uk](https://get-information-schools.service.gov.uk/Downloads):
+The script is idempotent: re-running it skips files that are already present and complete. Interrupted downloads leave no partial files (writes to `.tmp` then renames atomically).
 
-- Download **"All establishments"** → CSV
-- Save as `gias_establishments.csv`
+Optional flags:
 
-The download script also attempts this automatically.
+```bash
+python3 ks2_download_data.py --skip-gias          # skip GIAS if already downloaded
+python3 ks2_download_data.py --years 2023-24       # download a single year only
+python3 ks2_download_data.py --output-dir data/    # write files to a subdirectory
+```
 
-### 3. Configure AWS (same as KS5)
+If automatic download fails, the script prints manual instructions. EES data is also available at [explore-education-statistics.service.gov.uk](https://explore-education-statistics.service.gov.uk/find-statistics/key-stage-2-attainment) and GIAS at [get-information-schools.service.gov.uk/Downloads](https://get-information-schools.service.gov.uk/Downloads).
+
+### 2. Configure AWS (same as KS5)
 
 Update `ks2_config.json` with your Place Index name (can reuse the same index as KS5).
 
@@ -426,10 +442,10 @@ python3 ks2_create_standalone_app.py     # seconds, generates ks2_school_finder.
 ### KS2 Data Flow
 
 ```
-EES KS2 CSVs (long format) ─────────────────────────────────────────────────────┐
+ks2_school_attainment_20XXYY.csv (×3, long format) ─────────────────────────────┐
                                                                                  │
-GIAS establishments CSV ────┐                                                    │
-                            ↓                                                    ↓
+gias_establishments.csv ────┐                                                    │
+   (ks2_download_data.py)   ↓                                                    ↓
                      ks2_school_data_lib.py: pivot + join + consolidate across years
                                                     ↓
                       Filter by percentile → Geocode (AWS) → Crime stats → Cache
@@ -444,13 +460,14 @@ GIAS establishments CSV ────┐                                         
 ```
 map_uk_schools/
 ├── ks2_config.json                    # KS2 settings
-├── ks2_download_data.py               # Data downloader
+├── ks2_download_data.py               # Data downloader (idempotent)
 ├── ks2_school_data_lib.py             # KS2 processing library
 ├── ks2_generate_school_data.py        # Pipeline script
 ├── ks2_create_standalone_app.py       # Web app generator
 │
-├── ks2_school_attainment_data.csv     # Downloaded from EES (2022/23–2023/24)
-├── ks2_school_attainment_2122.csv     # Downloaded from EES (2021/22)
+├── ks2_school_attainment_202324.csv   # Downloaded from EES (2023/24)
+├── ks2_school_attainment_202223.csv   # Downloaded from EES (2022/23)
+├── ks2_school_attainment_202122.csv   # Downloaded from EES (2021/22)
 ├── gias_establishments.csv            # Downloaded from GIAS
 │
 ├── ks2_processed_school_data.csv      # Generated output
