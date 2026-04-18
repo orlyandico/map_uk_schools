@@ -77,14 +77,19 @@ Create a Place Index in Amazon Location Service and update `config.json`:
 
 **Option A: Static map + web app**
 ```bash
-python3 plot_schools.py              # 5-15 mins, generates schools_map.html
+python3 plot_schools.py              # 5-15 mins, generates schools_map.html + processed_school_data.csv
 python3 create_standalone_app.py     # 5 seconds, generates school_finder.html
 ```
 
 **Option B: Web app only (faster)**
 ```bash
-python3 generate_school_data.py      # 5-15 mins, processes data only
+python3 generate_school_data.py      # 5-15 mins, generates processed_school_data.csv
 python3 create_standalone_app.py     # 5 seconds, generates school_finder.html
+```
+
+`create_standalone_app.py` reads `processed_school_data.csv` and the cache files. Optional flags:
+```bash
+python3 create_standalone_app.py --input processed_school_data.csv --output school_finder.html
 ```
 
 ### 6. View or Deploy
@@ -106,11 +111,11 @@ aws s3 cp school_finder.html s3://your-bucket/index.html \
 
 ### Scripts
 
-- **`school_data_lib.py`** (~878 lines) - Shared library with all data processing functions
+- **`school_data_lib.py`** (~885 lines) - Shared library with all data processing functions
 - **`consolidate_crime_data.py`** (~150 lines) - Consolidates downloaded crime CSV files
-- **`plot_schools.py`** (~724 lines) - Generates static cluster map using Folium
+- **`plot_schools.py`** (~725 lines) - Generates static cluster map using Folium
 - **`generate_school_data.py`** (~120 lines) - Fast data-only processing (no map)
-- **`create_standalone_app.py`** - Builds standalone HTML file with embedded data
+- **`create_standalone_app.py`** (~1100 lines) - Builds standalone HTML file with embedded data
 
 ### Data Flow
 
@@ -119,9 +124,12 @@ Crime CSVs → consolidate_crime_data.py → combined_crimes.csv.gz
                                                     ↓
 School CSVs → Consolidate → Filter by percentile → Geocode (AWS) → Calculate crime stats → Cache
                                                                                               ↓
-                                                          plot_schools.py → schools_map.html
-                                                                              ↓
-                                                          create_standalone_app.py → school_finder.html
+                                           plot_schools.py → schools_map.html (optional)
+                                           generate_school_data.py (faster, no map)
+                                                              ↓
+                                           processed_school_data.csv + cache files
+                                                              ↓
+                                           create_standalone_app.py → school_finder.html
 ```
 
 ### Key Features
@@ -333,6 +341,123 @@ aws s3api put-bucket-policy --bucket uk-schools-finder --policy '{
 Access at: `http://uk-schools-finder.s3-website-REGION.amazonaws.com`
 
 **Note:** For HTTPS (required for GPS location), add CloudFront.
+
+---
+
+## KS2 Primary Schools Map
+
+A parallel set of scripts (all prefixed `ks2_`) generates an equivalent interactive map for **state primary schools**, ranked by KS2 SATs results (percentage of pupils meeting the expected standard in combined reading, writing and maths).
+
+### Key differences from the KS5 map
+
+| | KS5 (secondary) | KS2 (primary) |
+|---|---|---|
+| Data portal | compare-school-performance.service.gov.uk | explore-education-statistics.service.gov.uk |
+| File format | Wide CSV, one row per school per year | Long CSV, one row per school × subject × year → needs pivot |
+| Address source | In the performance CSV | Separate GIAS download |
+| School types | State + independent | State only (independents don't sit mandatory SATs) |
+| Metric | TB3PTSE (avg best 3 A-levels) | % meeting expected standard (R+W+M combined) |
+| Colour scheme | Navy/Blue/Royal Blue (state), Red/Orange/Yellow (independent) | Dark green / Green / Light green |
+
+### 1. Download KS2 Performance Data
+
+From [explore-education-statistics.service.gov.uk](https://explore-education-statistics.service.gov.uk/find-statistics/key-stage-2-attainment/2023-24):
+
+- Go to **"Explore and download data"** → download the **"Key stage 2 institution level — Schools (performance)"** CSV
+  - Dataset ID: `b361b4c3-21b9-46fd-9126-b8060c6a40e2` (covers 2022/23 and 2023/24)
+  - Save as `ks2_school_attainment_data.csv`
+- For the third year (2021/22): go to the [2021/22 release](https://explore-education-statistics.service.gov.uk/find-statistics/key-stage-2-attainment/2021-22) → **"Download all data (ZIP)"**, extract the school-level performance CSV, save as `ks2_school_attainment_2122.csv`
+
+Or run the download script which attempts this automatically:
+
+```bash
+pip install httpx   # only extra dep needed for the downloader
+python3 ks2_download_data.py
+```
+
+### 2. Download School Addresses (GIAS)
+
+From [get-information-schools.service.gov.uk](https://get-information-schools.service.gov.uk/Downloads):
+
+- Download **"All establishments"** → CSV
+- Save as `gias_establishments.csv`
+
+The download script also attempts this automatically.
+
+### 3. Configure AWS (same as KS5)
+
+Update `ks2_config.json` with your Place Index name (can reuse the same index as KS5).
+
+### 4. Process and Generate
+
+```bash
+python3 ks2_generate_school_data.py      # 5-15 mins, generates ks2_processed_school_data.csv
+python3 ks2_create_standalone_app.py     # seconds, generates ks2_school_finder.html
+```
+
+### KS2 Scripts
+
+- **`ks2_download_data.py`** — Downloads KS2 performance data from EES and GIAS establishment list
+- **`ks2_school_data_lib.py`** (~400 lines) — KS2 data processing: load long-format EES data, pivot, join GIAS, consolidate across years
+- **`ks2_generate_school_data.py`** (~120 lines) — Full pipeline: load → filter → geocode → crime stats → save
+- **`ks2_create_standalone_app.py`** (~800 lines) — Builds standalone `ks2_school_finder.html` with embedded data
+
+### KS2 Configuration (`ks2_config.json`)
+
+```json
+{
+  "filtering": {
+    "percentile": 0.75,
+    "subject": "Reading, writing and maths",
+    "breakdown": "All pupils"
+  },
+  "grading": {
+    "high_threshold": 85,
+    "expected_threshold": 75
+  }
+}
+```
+
+**Colour coding** (all state schools):
+- Dark green: ≥85% meeting expected standard
+- Green: ≥75%
+- Light green: above selected percentile threshold but <75%
+
+### KS2 Data Flow
+
+```
+EES KS2 CSVs (long format) ─────────────────────────────────────────────────────┐
+                                                                                 │
+GIAS establishments CSV ────┐                                                    │
+                            ↓                                                    ↓
+                     ks2_school_data_lib.py: pivot + join + consolidate across years
+                                                    ↓
+                      Filter by percentile → Geocode (AWS) → Crime stats → Cache
+                                                    ↓
+                              ks2_generate_school_data.py → ks2_processed_school_data.csv
+                                                    ↓
+                              ks2_create_standalone_app.py → ks2_school_finder.html
+```
+
+### KS2 File Structure
+
+```
+map_uk_schools/
+├── ks2_config.json                    # KS2 settings
+├── ks2_download_data.py               # Data downloader
+├── ks2_school_data_lib.py             # KS2 processing library
+├── ks2_generate_school_data.py        # Pipeline script
+├── ks2_create_standalone_app.py       # Web app generator
+│
+├── ks2_school_attainment_data.csv     # Downloaded from EES (2022/23–2023/24)
+├── ks2_school_attainment_2122.csv     # Downloaded from EES (2021/22)
+├── gias_establishments.csv            # Downloaded from GIAS
+│
+├── ks2_processed_school_data.csv      # Generated output
+├── ks2_geocoding_cache.json
+├── ks2_crime_cache.json
+└── ks2_school_finder.html
+```
 
 ---
 

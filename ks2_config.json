@@ -1,0 +1,59 @@
+{
+  "filtering": {
+    "percentile": 0.75,
+    "subject": "Reading, writing and maths",
+    "breakdown": "All pupils"
+  },
+  "grading": {
+    "high_threshold": 85,
+    "expected_threshold": 75
+  },
+  "colors": {
+    "high": "#005C29",
+    "expected": "#228B22",
+    "below_expected": "#8FBC8F"
+  },
+  "crime": {
+    "school_crime_radius_km": 3,
+    "crime_data_file": "combined_crimes.csv.gz",
+    "excluded_crime_types": [
+      "Shoplifting",
+      "Bicycle theft",
+      "Other theft",
+      "Other crime",
+      "Drugs",
+      "Anti-social behaviour",
+      "Criminal damage and arson"
+    ]
+  },
+  "geocoding": {
+    "index_name": "your-place-index-name",
+    "region_name": "eu-west-2"
+  },
+  "caching": {
+    "geocoding_cache_file": "ks2_geocoding_cache.json",
+    "crime_cache_file": "ks2_crime_cache.json"
+  },
+  "data": {
+    "ks2_performance_files": [
+      "ks2_school_attainment_data.csv",
+      "ks2_school_attainment_2122.csv"
+    ],
+    "gias_file": "gias_establishments.csv",
+    "years": ["202122", "202223", "202324"]
+  },
+  "output": {
+    "processed_csv": "ks2_processed_school_data.csv",
+    "map_filename": "ks2_schools_map.html"
+  },
+  "clustering": {
+    "default_cluster_radius_km": 5,
+    "default_min_schools": 2
+  },
+  "map": {
+    "default_zoom": 8,
+    "marker_size": 30,
+    "cluster_marker_size": 20,
+    "popup_max_width": 350
+  }
+}
