@@ -164,8 +164,15 @@ def load_ks2_performance_files(file_paths, config):
 
         logger.info(f"  Loaded {len(df):,} rows, columns: {list(df.columns[:8])}...")
 
-        # Identify key columns
-        urn_col = _find_col(df, _URN_COL_CANDIDATES)
+        # Identify key columns — skip file entirely if no school-level URN column
+        urn_col = _find_col(df, _URN_COL_CANDIDATES, required=False)
+        if not urn_col:
+            logger.warning(
+                f"  No school_urn column in {path} "
+                f"(columns: {list(df.columns[:8])}…) — "
+                "this file does not contain school-level data, skipping."
+            )
+            continue
         name_col = _find_col(df, _NAME_COL_CANDIDATES, required=False)
         period_col = _find_col(df, _PERIOD_COL_CANDIDATES)
         subject_col = _find_col(df, _SUBJECT_COL_CANDIDATES)
@@ -377,7 +384,7 @@ def consolidate_ks2_schools(perf_df, gias_df, config):
     consolidated = []
     for urn, group in merged.groupby("school_urn"):
         avg_pct = group["expected_pct"].mean()
-        avg_higher = group["higher_pct"].mean() if "higher_pct" in group.columns else None
+        avg_higher = pd.to_numeric(group["higher_pct"], errors="coerce").mean() if "higher_pct" in group.columns else None
 
         # Take the most recent row for metadata
         latest = group.iloc[-1].copy()

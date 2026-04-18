@@ -1,8 +1,8 @@
 {
   "filtering": {
-    "percentile": 0.75,
+    "percentile": 0.90,
     "subject": "Reading, writing and maths",
-    "breakdown": "All pupils"
+    "breakdown": "Total"
   },
   "grading": {
     "high_threshold": 85,
@@ -36,8 +36,7 @@
   },
   "data": {
     "ks2_performance_files": [
-      "ks2_school_attainment_data.csv",
-      "ks2_school_attainment_2122.csv"
+      "ks2_school_attainment_202324.csv"
     ],
     "gias_file": "gias_establishments.csv",
     "years": ["202122", "202223", "202324"]

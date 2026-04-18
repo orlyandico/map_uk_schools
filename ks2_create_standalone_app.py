@@ -259,16 +259,15 @@ def get_html_template():
             const textColor = getTextColor(color);
             const label = Math.round(school.expected_pct) + '%';
             return L.divIcon({
-                html: `<svg width="36" height="46" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 0C7.58 0 4 3.58 4 8c0 5.76 8 16 8 16s8-10.24 8-16c0-4.42-3.58-8-8-8z"
-                          fill="${color}" stroke="#333" stroke-width="0.8"/>
-                    <text x="12" y="9.5" font-family="Arial" font-size="5.5" font-weight="bold"
+                html: `<svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="11" fill="${color}" stroke="#333" stroke-width="0.8"/>
+                    <text x="12" y="15" font-family="Arial" font-size="10" font-weight="bold"
                           fill="${textColor}" text-anchor="middle">${label}</text>
                 </svg>`,
                 className: '',
-                iconSize: [36, 46],
-                iconAnchor: [18, 46],
-                popupAnchor: [160, 0]
+                iconSize: [22, 22],
+                iconAnchor: [11, 11],
+                popupAnchor: [160, -11]
             });
         }
 
@@ -354,7 +353,6 @@ def get_html_template():
                     icon: createMarkerIcon(school)
                 }).addTo(map);
                 marker.on('click', () => showSchoolDetail(school));
-                marker.bindPopup(createPopupContent(school), { maxWidth: 400 });
                 currentMarkers.push(marker);
             });
 

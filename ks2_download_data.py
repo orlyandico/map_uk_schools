@@ -176,8 +176,23 @@ def _extract_school_perf_csv(zip_bytes: bytes, dest_path: str) -> bool:
                 ]
             chosen = candidates[0]
             print(f"  Extracting: {chosen}")
-            with zf.open(chosen) as src, open(tmp_path, "wb") as dst:
-                dst.write(src.read())
+            with zf.open(chosen) as src:
+                raw = src.read()
+
+            # Validate it is school-level data (must have a school_urn column)
+            header = raw.split(b"\n")[0].decode("utf-8", errors="replace")
+            cols = [c.strip().strip('"') for c in header.split(",")]
+            if not any(c in cols for c in ("school_urn", "urn", "URN")):
+                print(
+                    f"  Extracted file has no school_urn column "
+                    f"(geographic_level is probably national/LA). "
+                    f"This release does not contain school-level data.",
+                    file=sys.stderr,
+                )
+                return False
+
+            with open(tmp_path, "wb") as dst:
+                dst.write(raw)
         os.replace(tmp_path, dest_path)
         print(f"  Saved to {dest_path} ({os.path.getsize(dest_path) / 1e6:.1f} MB)")
         return True
