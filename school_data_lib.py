@@ -95,7 +95,7 @@ def get_default_config():
             "cluster": {"circle": "#1E90FF", "center_marker": "#FF4500"},
         },
         "data": {
-            "school_data_pattern": "20*ks5final*.csv.gz",
+            "school_data_pattern": "20*_england_ks5*.csv*",
             "required_columns": [
                 "SCHNAME",
                 "ADDRESS1",
@@ -602,49 +602,81 @@ def load_crime_data(crime_data_file):
 
 def load_school_data_files(school_data_pattern):
     """
-    Find and load school data files matching pattern
+    Find and load school data files matching one or more glob patterns.
+
+    Supports the DfE KS5 naming variants: ``ks5final`` (definitive release) and
+    ``ks5revised`` (interim release published before the final), in either
+    gzipped (``.csv.gz``) or plain (``.csv``) form. When both a final and a
+    revised file exist for the same academic year, the final is preferred.
+    pandas reads gzip automatically from the file extension.
 
     Args:
-        school_data_pattern: Glob pattern for school data files
+        school_data_pattern: Glob pattern (str) or list of patterns.
 
     Returns:
         pd.DataFrame: Combined school data from all years, or None if no files found
     """
     import glob
 
-    csv_files = glob.glob(school_data_pattern)
-    if not csv_files:
+    patterns = (
+        school_data_pattern
+        if isinstance(school_data_pattern, (list, tuple))
+        else [school_data_pattern]
+    )
+
+    matched = set()
+    for pat in patterns:
+        matched.update(glob.glob(pat))
+
+    if not matched:
         logging.error(
-            f"No school data files found matching pattern '{school_data_pattern}'"
+            f"No school data files found matching pattern(s) {patterns}"
         )
         return None
 
-    logging.info(f"Found {len(csv_files)} data files: {csv_files}")
+    def extract_year(path):
+        """Return the academic-year key (e.g. '2023-2024') or None."""
+        name = os.path.basename(path)
+        m = re.match(r"(20\d{2}-20\d{2})", name)
+        if m:
+            return m.group(1)
+        m = re.match(r"(20\d{2})", name)
+        return m.group(1) if m else None
 
-    # Load and combine all years
+    def variant_rank(path):
+        """Lower is preferred: final < revised < other."""
+        name = os.path.basename(path).lower()
+        if "ks5final" in name:
+            return 0
+        if "ks5revised" in name:
+            return 1
+        return 2
+
+    # Dedupe per year, preferring final over revised.
+    by_year = {}
+    for f in sorted(matched):
+        year = extract_year(f) or os.path.basename(f)
+        current = by_year.get(year)
+        if current is None or variant_rank(f) < variant_rank(current):
+            if current is not None:
+                logging.info(
+                    f"Year {year}: preferring {os.path.basename(f)} over "
+                    f"{os.path.basename(current)}"
+                )
+            by_year[year] = f
+        else:
+            logging.info(
+                f"Year {year}: skipping {os.path.basename(f)} in favour of "
+                f"{os.path.basename(current)}"
+            )
+
+    selected = sorted(by_year.items())
+    logging.info(
+        f"Found {len(selected)} data file(s): {[os.path.basename(p) for _, p in selected]}"
+    )
+
     all_dfs = []
-    for csv_file in sorted(csv_files):
-        # Extract year from filename with validation
-        try:
-            filename = os.path.basename(csv_file)
-            year_candidate = filename.split("_")[0]
-
-            # Validate that it looks like a year (4 digits)
-            if year_candidate.isdigit() and len(year_candidate) == 4:
-                year = year_candidate
-            else:
-                # Fallback: try to find a 4-digit year anywhere in the filename
-                year_match = re.search(r'\b(20\d{2})\b', filename)
-                if year_match:
-                    year = year_match.group(1)
-                else:
-                    # Last resort: use filename without extension
-                    year = os.path.splitext(filename)[0]
-                    logging.warning(f"Could not extract year from {filename}, using '{year}'")
-        except Exception as e:
-            logging.error(f"Error extracting year from {csv_file}: {e}, using 'unknown'")
-            year = "unknown"
-
+    for year, csv_file in selected:
         try:
             df_year = pd.read_csv(csv_file, low_memory=False, dtype={"TELNUM": str})
             df_year["YEAR"] = year

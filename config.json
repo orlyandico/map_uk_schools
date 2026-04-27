@@ -55,7 +55,7 @@
     }
   },
   "data": {
-    "school_data_pattern": "20*ks5final*.csv.gz",
+    "school_data_pattern": "20*_england_ks5*.csv*",
     "required_columns": [
       "SCHNAME",
       "ADDRESS1",

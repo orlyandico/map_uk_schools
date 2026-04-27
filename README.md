@@ -30,7 +30,7 @@ A third script, `combined_create_standalone_app.py`, merges the outputs of both 
 ### Install Dependencies
 
 ```bash
-pip install pandas boto3 tqdm folium scikit-learn numpy httpx
+pip install pandas boto3 tqdm numpy httpx
 ```
 
 ### Configure AWS
@@ -81,17 +81,15 @@ python3 ks5_download_data.py --output-dir data/       # write to a subdirectory
 
 ### 2. Generate Outputs
 
-**Option A: Static map + web app**
+Run the data pipeline once, then render whichever outputs you want:
+
 ```bash
-python3 plot_schools.py              # 5-15 mins, generates schools_map.html + processed_school_data.csv
-python3 create_standalone_app.py     # 5 seconds, generates school_finder.html
+python3 generate_school_data.py      # 5-15 mins, generates processed_school_data.csv + caches
+python3 create_standalone_app.py     # seconds, generates school_finder.html (mobile web app)
+python3 plot_schools.py              # seconds, generates schools_map.html (static cluster map)
 ```
 
-**Option B: Web app only (faster)**
-```bash
-python3 generate_school_data.py      # 5-15 mins, generates processed_school_data.csv
-python3 create_standalone_app.py     # 5 seconds, generates school_finder.html
-```
+Both rendering scripts are independent and read from `processed_school_data.csv` + the cache files, so you can regenerate either HTML at any time without re-running the data pipeline.
 
 `create_standalone_app.py` reads `processed_school_data.csv` and the cache files. Optional flags:
 ```bash
@@ -101,8 +99,8 @@ python3 create_standalone_app.py --input processed_school_data.csv --output scho
 ### Outputs
 
 #### Static Cluster Map (`schools_map.html`)
-- Desktop-focused Folium map
-- Shows geographic clusters of high-performing schools
+- Self-contained Leaflet map (same rendering stack as the web app)
+- Shows geographic clusters of high-performing schools with translucent cluster-area circles and numbered cluster-centre markers
 - Configurable radius: `python3 plot_schools.py --radius 10 --min-schools 3`
 - Use case: Finding dense areas for home purchases
 
@@ -306,6 +304,64 @@ Crime filtering is configurable via `config.json` → `crime.excluded_crime_type
 
 ---
 
+## Address Crime Lookup (Standalone)
+
+`crime_lookup.py` is a small standalone tool for aggregating crime counts around one or more free-form UK addresses. It reuses the same Amazon Location Service place index and `combined_crimes.csv.gz` as the school pipelines — useful for direct address-by-address comparisons (e.g., evaluating individual properties).
+
+Crimes are counted across **all** crime types (the `excluded_crime_types` filter from `config.json` is not applied here — the goal is a complete picture, broken down by type).
+
+### Usage
+
+Interactive prompt — enter addresses one per line, type `STOP` or `END` to finish:
+
+```bash
+python3 crime_lookup.py
+```
+
+Batch input — read one address per line from a text file (blank lines and `#` comments are ignored, no prompting):
+
+```bash
+python3 crime_lookup.py --input addresses.txt
+```
+
+Default radius is 500 m. Override with a comma-separated list of metres:
+
+```bash
+python3 crime_lookup.py --radius 250,500,1000
+```
+
+Output path (default `crime_lookup_output.csv`):
+
+```bash
+python3 crime_lookup.py --output my_lookup.csv
+```
+
+### Output format
+
+A per-address legend at the top of the CSV (one row each: full normalised address from AWS + short code), followed by the column header row and the data:
+
+```csv
+"10 Downing Street, London SW1A 2AA, UK",A1
+"Buckingham Palace, London SW1A 1AA, UK",A2
+Radius_m,Crime type,A1,A2
+500,Burglary,2,0
+500,Robbery,0,1
+500,Violence,2,1
+...
+```
+
+Crime types are listed alphabetically and zero-filled when absent so columns line up across addresses for side-by-side comparison.
+
+To load just the data table with pandas, skip the legend rows:
+
+```python
+import pandas as pd
+n_addresses = 2  # equal to the number of legend rows in the file
+df = pd.read_csv("crime_lookup_output.csv", header=n_addresses)
+```
+
+---
+
 ## Deployment
 
 ### Local
@@ -350,8 +406,9 @@ When new school year data is released (2023-24 onwards downloads automatically):
 python3 ks5_download_data.py --years 2024-2025
 
 # Regenerate (existing schools use cached geocoding)
-python3 plot_schools.py              # or generate_school_data.py
+python3 generate_school_data.py
 python3 create_standalone_app.py
+python3 plot_schools.py              # optional: refresh schools_map.html too
 
 # Redeploy
 aws s3 cp school_finder.html s3://your-bucket/index.html --acl public-read
@@ -366,9 +423,9 @@ aws s3 cp school_finder.html s3://your-bucket/index.html --acl public-read
 - **`ks5_download_data.py`** — Downloads KS5 16-18 final results CSVs from DfE (idempotent)
 - **`school_data_lib.py`** (~885 lines) - Shared library with all data processing functions
 - **`consolidate_crime_data.py`** (~150 lines) - Consolidates downloaded crime CSV files
-- **`plot_schools.py`** (~725 lines) - Generates static cluster map using Folium
-- **`generate_school_data.py`** (~120 lines) - Fast data-only processing (no map)
-- **`create_standalone_app.py`** (~1100 lines) - Builds standalone HTML file with embedded data
+- **`generate_school_data.py`** (~120 lines) - Data pipeline: load → filter → geocode → crime stats → save
+- **`create_standalone_app.py`** (~1100 lines) - Builds `school_finder.html` (mobile web app) with embedded data
+- **`plot_schools.py`** (~430 lines) - Builds `schools_map.html` (static cluster map) with embedded data; uses a vectorised haversine distance matrix for clustering
 
 ### KS2 Scripts
 
@@ -390,12 +447,12 @@ Crime CSVs → consolidate_crime_data.py → combined_crimes.csv.gz
                                                     ↓
 School CSVs → Consolidate → Filter by percentile → Geocode (AWS) → Calculate crime stats → Cache
                                                                                               ↓
-                                           plot_schools.py → schools_map.html (optional)
-                                           generate_school_data.py (faster, no map)
+                                           generate_school_data.py
                                                               ↓
                                            processed_school_data.csv + cache files
                                                               ↓
-                                           create_standalone_app.py → school_finder.html
+                                           ├── create_standalone_app.py → school_finder.html (web app)
+                                           └── plot_schools.py          → schools_map.html  (cluster map)
 ```
 
 ### KS2 Data Flow
@@ -494,7 +551,8 @@ map_uk_schools/
 │
 └── Shared
     ├── consolidate_crime_data.py      # Crime data consolidator
-    └── combined_crimes.csv.gz         # Generated crime data
+    ├── combined_crimes.csv.gz         # Generated crime data
+    └── crime_lookup.py                # Address-based crime aggregator (standalone)
 ```
 
 ---

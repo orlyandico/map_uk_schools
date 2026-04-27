@@ -13182,6 +13182,794 @@
     "crime_types": {},
     "radius_km": 3
   },
+  "51.488275,-0.330517,3": {
+    "total_crimes": 16088,
+    "crime_types": {
+      "Violence and sexual offences": 8239,
+      "Vehicle crime": 3128,
+      "Public order": 1708,
+      "Burglary": 1389,
+      "Theft from the person": 897,
+      "Robbery": 614,
+      "Possession of weapons": 113
+    },
+    "radius_km": 3
+  },
+  "53.799190,-1.545378,3": {
+    "total_crimes": 44916,
+    "crime_types": {
+      "Violence and sexual offences": 25989,
+      "Public order": 6566,
+      "Vehicle crime": 4617,
+      "Burglary": 3563,
+      "Robbery": 1731,
+      "Theft from the person": 1619,
+      "Possession of weapons": 831
+    },
+    "radius_km": 3
+  },
+  "51.499709,-0.386214,3": {
+    "total_crimes": 20560,
+    "crime_types": {
+      "Violence and sexual offences": 10608,
+      "Vehicle crime": 3437,
+      "Public order": 2097,
+      "Burglary": 1604,
+      "Theft from the person": 1587,
+      "Robbery": 1069,
+      "Possession of weapons": 158
+    },
+    "radius_km": 3
+  },
+  "52.199201,0.140165,3": {
+    "total_crimes": 11418,
+    "crime_types": {
+      "Violence and sexual offences": 6548,
+      "Public order": 1882,
+      "Vehicle crime": 872,
+      "Burglary": 866,
+      "Theft from the person": 715,
+      "Possession of weapons": 273,
+      "Robbery": 262
+    },
+    "radius_km": 3
+  },
+  "51.465088,-0.172913,3": {
+    "total_crimes": 33545,
+    "crime_types": {
+      "Violence and sexual offences": 13796,
+      "Vehicle crime": 6581,
+      "Theft from the person": 3823,
+      "Burglary": 3762,
+      "Public order": 3403,
+      "Robbery": 1941,
+      "Possession of weapons": 239
+    },
+    "radius_km": 3
+  },
+  "51.399875,-0.304755,3": {
+    "total_crimes": 10757,
+    "crime_types": {
+      "Violence and sexual offences": 5728,
+      "Vehicle crime": 1399,
+      "Public order": 1395,
+      "Burglary": 945,
+      "Theft from the person": 883,
+      "Robbery": 311,
+      "Possession of weapons": 96
+    },
+    "radius_km": 3
+  },
+  "51.486857,-0.336395,3": {
+    "total_crimes": 17529,
+    "crime_types": {
+      "Violence and sexual offences": 9117,
+      "Vehicle crime": 3024,
+      "Public order": 1961,
+      "Burglary": 1446,
+      "Theft from the person": 1174,
+      "Robbery": 678,
+      "Possession of weapons": 129
+    },
+    "radius_km": 3
+  },
+  "53.483540,-3.023507,3": {
+    "total_crimes": 7271,
+    "crime_types": {
+      "Violence and sexual offences": 5021,
+      "Public order": 1194,
+      "Vehicle crime": 440,
+      "Burglary": 424,
+      "Possession of weapons": 88,
+      "Robbery": 86,
+      "Theft from the person": 18
+    },
+    "radius_km": 3
+  },
+  "51.347305,-0.193132,3": {
+    "total_crimes": 7456,
+    "crime_types": {
+      "Violence and sexual offences": 4255,
+      "Vehicle crime": 972,
+      "Public order": 863,
+      "Burglary": 800,
+      "Theft from the person": 279,
+      "Robbery": 232,
+      "Possession of weapons": 55
+    },
+    "radius_km": 3
+  },
+  "52.195268,0.123000,3": {
+    "total_crimes": 10085,
+    "crime_types": {
+      "Violence and sexual offences": 5687,
+      "Public order": 1702,
+      "Vehicle crime": 769,
+      "Burglary": 757,
+      "Theft from the person": 703,
+      "Robbery": 236,
+      "Possession of weapons": 231
+    },
+    "radius_km": 3
+  },
+  "53.429044,-2.250462,3": {
+    "total_crimes": 31,
+    "crime_types": {
+      "Violence and sexual offences": 26,
+      "Public order": 4,
+      "Possession of weapons": 1
+    },
+    "radius_km": 3
+  },
+  "51.511107,-0.189448,3": {
+    "total_crimes": 68792,
+    "crime_types": {
+      "Violence and sexual offences": 23636,
+      "Theft from the person": 18053,
+      "Vehicle crime": 9530,
+      "Burglary": 6442,
+      "Public order": 6433,
+      "Robbery": 4138,
+      "Possession of weapons": 560
+    },
+    "radius_km": 3
+  },
+  "51.518455,-0.122302,3": {
+    "total_crimes": 152769,
+    "crime_types": {
+      "Theft from the person": 80790,
+      "Violence and sexual offences": 34840,
+      "Public order": 10770,
+      "Robbery": 10143,
+      "Vehicle crime": 7777,
+      "Burglary": 7603,
+      "Possession of weapons": 846
+    },
+    "radius_km": 3
+  },
+  "50.832689,-0.163249,3": {
+    "total_crimes": 21973,
+    "crime_types": {
+      "Violence and sexual offences": 13047,
+      "Public order": 4213,
+      "Vehicle crime": 1509,
+      "Burglary": 1282,
+      "Theft from the person": 819,
+      "Robbery": 565,
+      "Possession of weapons": 538
+    },
+    "radius_km": 3
+  },
+  "53.398018,-2.944165,3": {
+    "total_crimes": 31560,
+    "crime_types": {
+      "Violence and sexual offences": 19604,
+      "Public order": 6067,
+      "Burglary": 1869,
+      "Vehicle crime": 1765,
+      "Theft from the person": 1036,
+      "Robbery": 666,
+      "Possession of weapons": 553
+    },
+    "radius_km": 3
+  },
+  "53.451630,-2.252206,3": {
+    "total_crimes": 53,
+    "crime_types": {
+      "Violence and sexual offences": 44,
+      "Public order": 4,
+      "Vehicle crime": 2,
+      "Theft from the person": 2,
+      "Robbery": 1
+    },
+    "radius_km": 3
+  },
+  "51.743664,-2.280093,3": {
+    "total_crimes": 1443,
+    "crime_types": {
+      "Violence and sexual offences": 1098,
+      "Public order": 122,
+      "Vehicle crime": 106,
+      "Burglary": 84,
+      "Possession of weapons": 20,
+      "Robbery": 11,
+      "Theft from the person": 2
+    },
+    "radius_km": 3
+  },
+  "52.462756,-1.884621,3": {
+    "total_crimes": 41740,
+    "crime_types": {
+      "Violence and sexual offences": 24248,
+      "Vehicle crime": 5401,
+      "Public order": 4173,
+      "Burglary": 2596,
+      "Robbery": 2212,
+      "Theft from the person": 1678,
+      "Possession of weapons": 1432
+    },
+    "radius_km": 3
+  },
+  "52.247136,-0.955470,3": {
+    "total_crimes": 4708,
+    "crime_types": {
+      "Violence and sexual offences": 3173,
+      "Public order": 465,
+      "Burglary": 440,
+      "Vehicle crime": 387,
+      "Possession of weapons": 115,
+      "Robbery": 101,
+      "Theft from the person": 27
+    },
+    "radius_km": 3
+  },
+  "52.814854,-2.074252,3": {
+    "total_crimes": 2705,
+    "crime_types": {
+      "Violence and sexual offences": 1918,
+      "Public order": 424,
+      "Burglary": 153,
+      "Vehicle crime": 115,
+      "Possession of weapons": 45,
+      "Robbery": 30,
+      "Theft from the person": 20
+    },
+    "radius_km": 3
+  },
+  "53.601638,-2.408091,3": {
+    "total_crimes": 18,
+    "crime_types": {
+      "Violence and sexual offences": 15,
+      "Public order": 2,
+      "Vehicle crime": 1
+    },
+    "radius_km": 3
+  },
+  "51.428679,-0.205276,3": {
+    "total_crimes": 15203,
+    "crime_types": {
+      "Violence and sexual offences": 7636,
+      "Vehicle crime": 2482,
+      "Public order": 1746,
+      "Burglary": 1473,
+      "Theft from the person": 1003,
+      "Robbery": 727,
+      "Possession of weapons": 136
+    },
+    "radius_km": 3
+  },
+  "51.611478,-0.168795,3": {
+    "total_crimes": 13295,
+    "crime_types": {
+      "Violence and sexual offences": 5310,
+      "Vehicle crime": 3503,
+      "Burglary": 1686,
+      "Public order": 1227,
+      "Theft from the person": 868,
+      "Robbery": 627,
+      "Possession of weapons": 74
+    },
+    "radius_km": 3
+  },
+  "50.968000,0.276473,3": {
+    "total_crimes": 390,
+    "crime_types": {
+      "Violence and sexual offences": 273,
+      "Public order": 48,
+      "Vehicle crime": 38,
+      "Burglary": 24,
+      "Possession of weapons": 4,
+      "Robbery": 2,
+      "Theft from the person": 1
+    },
+    "radius_km": 3
+  },
+  "53.352617,-1.492872,3": {
+    "total_crimes": 10659,
+    "crime_types": {
+      "Violence and sexual offences": 5463,
+      "Vehicle crime": 1776,
+      "Public order": 1487,
+      "Burglary": 1343,
+      "Possession of weapons": 222,
+      "Robbery": 216,
+      "Theft from the person": 152
+    },
+    "radius_km": 3
+  },
+  "51.464369,-2.598466,3": {
+    "total_crimes": 33057,
+    "crime_types": {
+      "Violence and sexual offences": 18419,
+      "Public order": 6255,
+      "Vehicle crime": 3889,
+      "Burglary": 2289,
+      "Robbery": 1311,
+      "Theft from the person": 518,
+      "Possession of weapons": 376
+    },
+    "radius_km": 3
+  },
+  "51.444656,-0.155489,3": {
+    "total_crimes": 32534,
+    "crime_types": {
+      "Violence and sexual offences": 14514,
+      "Vehicle crime": 5849,
+      "Theft from the person": 3348,
+      "Public order": 3305,
+      "Burglary": 3112,
+      "Robbery": 2136,
+      "Possession of weapons": 270
+    },
+    "radius_km": 3
+  },
+  "52.874213,-1.087069,3": {
+    "total_crimes": 238,
+    "crime_types": {
+      "Violence and sexual offences": 145,
+      "Burglary": 37,
+      "Public order": 31,
+      "Vehicle crime": 16,
+      "Possession of weapons": 7,
+      "Theft from the person": 1,
+      "Robbery": 1
+    },
+    "radius_km": 3
+  },
+  "51.665989,-0.266570,3": {
+    "total_crimes": 4430,
+    "crime_types": {
+      "Violence and sexual offences": 2729,
+      "Vehicle crime": 588,
+      "Public order": 493,
+      "Burglary": 317,
+      "Robbery": 116,
+      "Theft from the person": 113,
+      "Possession of weapons": 74
+    },
+    "radius_km": 3
+  },
+  "50.986021,-1.542166,3": {
+    "total_crimes": 208,
+    "crime_types": {
+      "Violence and sexual offences": 107,
+      "Burglary": 49,
+      "Vehicle crime": 30,
+      "Public order": 17,
+      "Possession of weapons": 3,
+      "Robbery": 2
+    },
+    "radius_km": 3
+  },
+  "52.436806,-0.279650,3": {
+    "total_crimes": 374,
+    "crime_types": {
+      "Violence and sexual offences": 275,
+      "Public order": 45,
+      "Vehicle crime": 29,
+      "Burglary": 16,
+      "Possession of weapons": 6,
+      "Robbery": 3
+    },
+    "radius_km": 3
+  },
+  "50.383534,-4.136164,3": {
+    "total_crimes": 18577,
+    "crime_types": {
+      "Violence and sexual offences": 13673,
+      "Public order": 2034,
+      "Vehicle crime": 1092,
+      "Burglary": 714,
+      "Possession of weapons": 515,
+      "Theft from the person": 314,
+      "Robbery": 235
+    },
+    "radius_km": 3
+  },
+  "52.503724,-1.883706,3": {
+    "total_crimes": 33836,
+    "crime_types": {
+      "Violence and sexual offences": 20724,
+      "Vehicle crime": 3636,
+      "Public order": 3289,
+      "Burglary": 2196,
+      "Robbery": 1859,
+      "Possession of weapons": 1259,
+      "Theft from the person": 873
+    },
+    "radius_km": 3
+  },
+  "51.533503,0.127104,3": {
+    "total_crimes": 16295,
+    "crime_types": {
+      "Violence and sexual offences": 9089,
+      "Vehicle crime": 2997,
+      "Public order": 1403,
+      "Burglary": 1133,
+      "Robbery": 936,
+      "Theft from the person": 603,
+      "Possession of weapons": 134
+    },
+    "radius_km": 3
+  },
+  "51.706933,-0.056519,3": {
+    "total_crimes": 5058,
+    "crime_types": {
+      "Violence and sexual offences": 3187,
+      "Vehicle crime": 713,
+      "Public order": 439,
+      "Burglary": 308,
+      "Theft from the person": 162,
+      "Robbery": 162,
+      "Possession of weapons": 87
+    },
+    "radius_km": 3
+  },
+  "51.606601,-0.357061,3": {
+    "total_crimes": 8738,
+    "crime_types": {
+      "Violence and sexual offences": 4259,
+      "Vehicle crime": 1736,
+      "Burglary": 980,
+      "Public order": 744,
+      "Theft from the person": 577,
+      "Robbery": 388,
+      "Possession of weapons": 54
+    },
+    "radius_km": 3
+  },
+  "51.548914,-0.048844,3": {
+    "total_crimes": 49687,
+    "crime_types": {
+      "Violence and sexual offences": 20883,
+      "Theft from the person": 9223,
+      "Vehicle crime": 5793,
+      "Public order": 5176,
+      "Burglary": 4853,
+      "Robbery": 3328,
+      "Possession of weapons": 431
+    },
+    "radius_km": 3
+  },
+  "50.628937,-4.356665,3": {
+    "total_crimes": 959,
+    "crime_types": {
+      "Violence and sexual offences": 726,
+      "Public order": 113,
+      "Burglary": 55,
+      "Vehicle crime": 28,
+      "Possession of weapons": 23,
+      "Theft from the person": 10,
+      "Robbery": 4
+    },
+    "radius_km": 3
+  },
+  "50.928101,-2.190689,3": {
+    "total_crimes": 57,
+    "crime_types": {
+      "Violence and sexual offences": 36,
+      "Burglary": 15,
+      "Public order": 3,
+      "Vehicle crime": 3
+    },
+    "radius_km": 3
+  },
+  "53.855985,-1.845063,3": {
+    "total_crimes": 2282,
+    "crime_types": {
+      "Violence and sexual offences": 1463,
+      "Public order": 330,
+      "Vehicle crime": 228,
+      "Burglary": 214,
+      "Robbery": 26,
+      "Possession of weapons": 11,
+      "Theft from the person": 10
+    },
+    "radius_km": 3
+  },
+  "51.372261,-2.360309,3": {
+    "total_crimes": 9145,
+    "crime_types": {
+      "Violence and sexual offences": 5561,
+      "Public order": 1678,
+      "Vehicle crime": 750,
+      "Burglary": 656,
+      "Robbery": 264,
+      "Theft from the person": 134,
+      "Possession of weapons": 102
+    },
+    "radius_km": 3
+  },
+  "51.477187,-0.367351,3": {
+    "total_crimes": 18619,
+    "crime_types": {
+      "Violence and sexual offences": 10362,
+      "Vehicle crime": 2675,
+      "Public order": 1996,
+      "Burglary": 1391,
+      "Theft from the person": 1252,
+      "Robbery": 778,
+      "Possession of weapons": 165
+    },
+    "radius_km": 3
+  },
+  "52.552461,1.466734,3": {
+    "total_crimes": 276,
+    "crime_types": {
+      "Violence and sexual offences": 214,
+      "Public order": 41,
+      "Burglary": 11,
+      "Vehicle crime": 7,
+      "Possession of weapons": 3
+    },
+    "radius_km": 3
+  },
+  "51.261238,1.085137,3": {
+    "total_crimes": 6694,
+    "crime_types": {
+      "Violence and sexual offences": 4881,
+      "Public order": 673,
+      "Vehicle crime": 441,
+      "Burglary": 291,
+      "Robbery": 143,
+      "Possession of weapons": 134,
+      "Theft from the person": 131
+    },
+    "radius_km": 3
+  },
+  "51.568517,0.085893,3": {
+    "total_crimes": 25658,
+    "crime_types": {
+      "Violence and sexual offences": 13693,
+      "Vehicle crime": 4145,
+      "Theft from the person": 2399,
+      "Public order": 2278,
+      "Burglary": 1722,
+      "Robbery": 1213,
+      "Possession of weapons": 208
+    },
+    "radius_km": 3
+  },
+  "53.301316,-0.481323,3": {
+    "total_crimes": 291,
+    "crime_types": {
+      "Violence and sexual offences": 229,
+      "Public order": 34,
+      "Vehicle crime": 12,
+      "Burglary": 11,
+      "Possession of weapons": 3,
+      "Robbery": 1,
+      "Theft from the person": 1
+    },
+    "radius_km": 3
+  },
+  "53.389974,-3.048874,3": {
+    "total_crimes": 13603,
+    "crime_types": {
+      "Violence and sexual offences": 9262,
+      "Public order": 2598,
+      "Vehicle crime": 668,
+      "Burglary": 603,
+      "Possession of weapons": 252,
+      "Robbery": 155,
+      "Theft from the person": 65
+    },
+    "radius_km": 3
+  },
+  "52.154648,-0.477189,3": {
+    "total_crimes": 8342,
+    "crime_types": {
+      "Violence and sexual offences": 4960,
+      "Public order": 1160,
+      "Vehicle crime": 1031,
+      "Burglary": 685,
+      "Robbery": 191,
+      "Possession of weapons": 174,
+      "Theft from the person": 141
+    },
+    "radius_km": 3
+  },
+  "51.269406,0.497874,3": {
+    "total_crimes": 9216,
+    "crime_types": {
+      "Violence and sexual offences": 6834,
+      "Public order": 981,
+      "Vehicle crime": 593,
+      "Burglary": 373,
+      "Possession of weapons": 194,
+      "Robbery": 126,
+      "Theft from the person": 115
+    },
+    "radius_km": 3
+  },
+  "50.816200,-0.076571,3": {
+    "total_crimes": 3703,
+    "crime_types": {
+      "Violence and sexual offences": 2426,
+      "Public order": 632,
+      "Vehicle crime": 239,
+      "Burglary": 196,
+      "Possession of weapons": 129,
+      "Theft from the person": 42,
+      "Robbery": 39
+    },
+    "radius_km": 3
+  },
+  "53.395378,-3.054506,3": {
+    "total_crimes": 13893,
+    "crime_types": {
+      "Violence and sexual offences": 9480,
+      "Public order": 2608,
+      "Vehicle crime": 681,
+      "Burglary": 634,
+      "Possession of weapons": 246,
+      "Robbery": 171,
+      "Theft from the person": 73
+    },
+    "radius_km": 3
+  },
+  "51.727429,-0.183648,3": {
+    "total_crimes": 612,
+    "crime_types": {
+      "Violence and sexual offences": 371,
+      "Vehicle crime": 96,
+      "Burglary": 84,
+      "Public order": 35,
+      "Possession of weapons": 11,
+      "Robbery": 9,
+      "Theft from the person": 6
+    },
+    "radius_km": 3
+  },
+  "51.575297,0.035287,3": {
+    "total_crimes": 17394,
+    "crime_types": {
+      "Violence and sexual offences": 8020,
+      "Vehicle crime": 3674,
+      "Public order": 1651,
+      "Burglary": 1588,
+      "Theft from the person": 1343,
+      "Robbery": 997,
+      "Possession of weapons": 121
+    },
+    "radius_km": 3
+  },
+  "52.037462,-0.319711,3": {
+    "total_crimes": 1095,
+    "crime_types": {
+      "Violence and sexual offences": 660,
+      "Vehicle crime": 171,
+      "Public order": 151,
+      "Burglary": 74,
+      "Possession of weapons": 24,
+      "Robbery": 10,
+      "Theft from the person": 5
+    },
+    "radius_km": 3
+  },
+  "54.995210,-1.518425,3": {
+    "total_crimes": 10587,
+    "crime_types": {
+      "Violence and sexual offences": 7160,
+      "Public order": 1470,
+      "Burglary": 783,
+      "Vehicle crime": 718,
+      "Possession of weapons": 198,
+      "Robbery": 185,
+      "Theft from the person": 73
+    },
+    "radius_km": 3
+  },
+  "53.195880,-0.468397,3": {
+    "total_crimes": 399,
+    "crime_types": {
+      "Violence and sexual offences": 312,
+      "Public order": 37,
+      "Burglary": 34,
+      "Vehicle crime": 9,
+      "Possession of weapons": 5,
+      "Theft from the person": 2
+    },
+    "radius_km": 3
+  },
+  "54.467263,-1.184296,3": {
+    "total_crimes": 355,
+    "crime_types": {
+      "Violence and sexual offences": 245,
+      "Burglary": 51,
+      "Vehicle crime": 24,
+      "Public order": 22,
+      "Possession of weapons": 7,
+      "Robbery": 4,
+      "Theft from the person": 2
+    },
+    "radius_km": 3
+  },
+  "51.562720,0.151290,3": {
+    "total_crimes": 20764,
+    "crime_types": {
+      "Violence and sexual offences": 11772,
+      "Vehicle crime": 3009,
+      "Public order": 2182,
+      "Burglary": 1409,
+      "Robbery": 1123,
+      "Theft from the person": 1072,
+      "Possession of weapons": 197
+    },
+    "radius_km": 3
+  },
+  "53.233912,-0.531088,3": {
+    "total_crimes": 11076,
+    "crime_types": {
+      "Violence and sexual offences": 7776,
+      "Public order": 1852,
+      "Burglary": 537,
+      "Vehicle crime": 415,
+      "Robbery": 222,
+      "Possession of weapons": 182,
+      "Theft from the person": 92
+    },
+    "radius_km": 3
+  },
+  "51.377668,-0.174895,3": {
+    "total_crimes": 13926,
+    "crime_types": {
+      "Violence and sexual offences": 8046,
+      "Vehicle crime": 1951,
+      "Public order": 1572,
+      "Burglary": 1218,
+      "Robbery": 566,
+      "Theft from the person": 453,
+      "Possession of weapons": 120
+    },
+    "radius_km": 3
+  },
+  "51.881893,-2.177935,3": {
+    "total_crimes": 1641,
+    "crime_types": {
+      "Violence and sexual offences": 1205,
+      "Public order": 240,
+      "Burglary": 94,
+      "Vehicle crime": 58,
+      "Possession of weapons": 26,
+      "Robbery": 16,
+      "Theft from the person": 2
+    },
+    "radius_km": 3
+  },
+  "51.202715,-2.163136,3": {
+    "total_crimes": 1307,
+    "crime_types": {
+      "Violence and sexual offences": 863,
+      "Public order": 202,
+      "Vehicle crime": 117,
+      "Burglary": 102,
+      "Theft from the person": 8,
+      "Robbery": 8,
+      "Possession of weapons": 7
+    },
+    "radius_km": 3
+  },
   "_metadata": {
     "crime_file_hash": "ab528cafcc4bf116e9e8df232b13f2954dc7bc5bd39402c38b62a4a325079d79",
     "excluded_crimes": [
@@ -13194,6 +13982,6 @@
       "Shoplifting"
     ],
     "school_crime_radius_km": 3,
-    "cached_at": "2025-10-23T18:23:56.680433"
+    "cached_at": "2026-04-21T22:31:53.317355"
   }
 }
