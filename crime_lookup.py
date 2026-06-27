@@ -86,15 +86,10 @@ def crimes_within(crime_df, lat, lon, radius_km):
     return bbox[distances <= radius_km]
 
 
-def print_aggregate(radius_m, hits, all_crime_types):
-    total = len(hits)
+def print_aggregate(radius_m, total, by_type):
+    """Print the per-type breakdown from an already-counted Series."""
     print(f"\nWithin {radius_m} m: {total} crimes")
-    by_type = (
-        hits["Crime type"]
-        .value_counts()
-        .reindex(all_crime_types, fill_value=0)
-    )
-    width = max(len(t) for t in all_crime_types)
+    width = max(len(t) for t in by_type.index)
     for crime_type, count in by_type.items():
         print(f"  {crime_type.ljust(width)}  {count}")
 
@@ -208,12 +203,12 @@ def main():
         counts = {}
         for radius_m in args.radius:
             hits = crimes_within(crime_df, a.lat, a.lon, radius_m / 1000.0)
-            print_aggregate(radius_m, hits, all_crime_types)
             by_type = (
                 hits["Crime type"]
                 .value_counts()
                 .reindex(all_crime_types, fill_value=0)
             )
+            print_aggregate(radius_m, len(hits), by_type)
             for crime_type, count in by_type.items():
                 counts[(radius_m, crime_type)] = int(count)
         counts_by_addr[a.code] = counts

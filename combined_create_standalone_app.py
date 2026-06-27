@@ -23,6 +23,7 @@ import argparse
 
 import pandas as pd
 
+import school_data_lib
 import ks2_school_data_lib
 import times_ranking
 
@@ -99,7 +100,7 @@ def load_ks5_schools(csv_file, crime_cache, geocoding_cache):
 
     logger.info(f"Loaded {len(df)} KS5 schools from {csv_file}")
 
-    times = times_ranking.load_secondary()
+    times = times_ranking.TimesRanking(times_ranking.SECONDARY_CSV)
     if not times.loaded:
         logger.warning(
             f"Times secondary CSV ({times_ranking.SECONDARY_CSV}) not found; "
@@ -109,12 +110,7 @@ def load_ks5_schools(csv_file, crime_cache, geocoding_cache):
     schools = []
 
     for _, row in df.iterrows():
-        addr_parts = []
-        for field in ["ADDRESS1", "TOWN", "PCODE"]:
-            v = row.get(field)
-            if pd.notna(v) and str(v).strip() and str(v).lower() != "nan":
-                addr_parts.append(str(v))
-        full_addr = ", ".join(addr_parts) if addr_parts else None
+        full_addr = school_data_lib.join_address(row, ["ADDRESS1", "TOWN", "PCODE"])
 
         lat = lon = None
         if full_addr and full_addr in geocoding_cache:
@@ -172,20 +168,12 @@ def load_ks2_schools(csv_file, crime_cache, geocoding_cache, crime_radius_km):
 
     logger.info(f"Loaded {len(df)} KS2 schools from {csv_file}")
 
-    times = times_ranking.load_primary()
+    times = times_ranking.TimesRanking(times_ranking.PRIMARY_CSV)
     if not times.loaded:
         logger.warning(
             f"Times primary CSV ({times_ranking.PRIMARY_CSV}) not found; "
             "skipping Times ranks for primaries"
         )
-
-    def build_addr(row):
-        parts = []
-        for f in ["Street", "Locality", "Town", "County", "Postcode"]:
-            v = row.get(f, "")
-            if pd.notna(v) and str(v).strip() and str(v).lower() != "nan":
-                parts.append(str(v).strip())
-        return ", ".join(parts) if parts else None
 
     schools = []
 
@@ -194,7 +182,9 @@ def load_ks2_schools(csv_file, crime_cache, geocoding_cache, crime_radius_km):
         lon = row.get("Longitude") if "Longitude" in row and pd.notna(row.get("Longitude")) else None
 
         if lat is None:
-            addr = build_addr(row)
+            addr = school_data_lib.join_address(
+                row, ["Street", "Locality", "Town", "County", "Postcode"]
+            )
             if addr and addr in geocoding_cache:
                 coords = geocoding_cache[addr]
                 if coords and len(coords) == 2:

@@ -36,23 +36,13 @@
   },
   "data": {
     "ks2_performance_files": [
+      "ks2_school_attainment_202122.csv",
+      "ks2_school_attainment_202223.csv",
       "ks2_school_attainment_202324.csv"
     ],
-    "gias_file": "gias_establishments.csv",
-    "years": ["202122", "202223", "202324"]
+    "gias_file": "gias_establishments.csv"
   },
   "output": {
-    "processed_csv": "ks2_processed_school_data.csv",
-    "map_filename": "ks2_schools_map.html"
-  },
-  "clustering": {
-    "default_cluster_radius_km": 5,
-    "default_min_schools": 2
-  },
-  "map": {
-    "default_zoom": 8,
-    "marker_size": 30,
-    "cluster_marker_size": 20,
-    "popup_max_width": 350
+    "processed_csv": "ks2_processed_school_data.csv"
   }
 }

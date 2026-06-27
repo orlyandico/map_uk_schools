@@ -2,7 +2,7 @@
 
 Interactive map tool for analyzing UK schools by A-level / SATs performance and local crime statistics. Generates a standalone web app that works on any device with no server required.
 
-**[Live Demo: Web App →](http://web.andico.org/school_finder.html)**
+**[Live Demo: Web App →](https://cdn.andico.org/school_finder.html)**
 
 <img src="schoolfinder.png" alt="School Finder Screenshot" width="400">
 
@@ -125,7 +125,7 @@ A parallel set of scripts (all prefixed `ks2_`) generates an equivalent interact
 
 ### 1. Download KS2 Data
 
-Run the download script — it fetches all three years of EES data and the GIAS establishment list automatically:
+Run the download script — it fetches the EES school-level attainment data and the GIAS establishment list automatically:
 
 ```bash
 python3 ks2_download_data.py
@@ -133,9 +133,15 @@ python3 ks2_download_data.py
 
 This produces:
 - `ks2_school_attainment_202324.csv` — EES 2023/24 (via content API)
-- `ks2_school_attainment_202223.csv` — EES 2022/23
-- `ks2_school_attainment_202122.csv` — EES 2021/22
 - `gias_establishments.csv` — GIAS all-establishments list
+
+#### School-level data availability
+
+DfE only publishes **school-level** (per-URN) KS2 attainment from 2022/23 onwards. The 2021/22 release — and earlier years — contain no school-level performance file in their EES ZIPs (school-level KS2 tables were suppressed for 2021/22, the first post-COVID year); those releases carry only aggregated data (national, local authority, region, by school type). So `ks2_download_data.py` reports `ees_2022-23` and `ees_2021-22` as **FAILED** and exits non-zero. This is expected, not a fault: there is no per-school file to extract.
+
+You do not lose 2022/23, though. Each EES release embeds a multi-year time series, and the 2023/24 release file already contains both the **2022/23 and 2023/24** school-level rows. A single `ks2_school_attainment_202324.csv` therefore covers the full school-level history that exists, and `ks2_school_data_lib` averages each school across both years.
+
+`ks2_config.json` lists all three years' filenames in `data.ks2_performance_files`. The loader skips any that are absent (with a warning) and de-duplicates on `(school_urn, time_period)`, so if DfE ever backfills a per-school 2021/22 file you can drop it in as `ks2_school_attainment_202122.csv` and re-run — overlapping years between releases will not be double-counted.
 
 The script is idempotent: re-running it skips files that are already present and complete. Interrupted downloads leave no partial files (writes to `.tmp` then renames atomically).
 
@@ -148,7 +154,7 @@ python3 ks2_download_data.py --years 2023-24       # download a single year only
 python3 ks2_download_data.py --output-dir data/    # write files to a subdirectory
 ```
 
-If automatic download fails, the script prints manual instructions. EES data is also available at [explore-education-statistics.service.gov.uk](https://explore-education-statistics.service.gov.uk/find-statistics/key-stage-2-attainment) and GIAS at [get-information-schools.service.gov.uk/Downloads](https://get-information-schools.service.gov.uk/Downloads).
+If automatic download fails for 2023/24, the script prints manual instructions. EES data is also available at [explore-education-statistics.service.gov.uk](https://explore-education-statistics.service.gov.uk/find-statistics/key-stage-2-attainment) and GIAS at [get-information-schools.service.gov.uk/Downloads](https://get-information-schools.service.gov.uk/Downloads).
 
 ### 2. Process the Data
 
@@ -540,8 +546,8 @@ generate_school_data.py: Consolidate → Filter by percentile → Geocode (AWS) 
                                   ↓
                        processed_school_data.csv ───────────────┐
                                                                 │
-ks2_school_attainment_20XXYY.csv (×3) ─┐                        │
-gias_establishments.csv ───────────────┤                        │
+ks2_school_attainment_202324.csv ──────┐  (2022/23 + 2023/24    │
+gias_establishments.csv ───────────────┤   school-level rows)    │
    (ks2_download_data.py)               ↓                        │
         ks2_generate_school_data.py: pivot + join + filter       │
         + geocode + crime stats                                 │
@@ -611,9 +617,7 @@ map_uk_schools/
 │   ├── ks2_school_data_lib.py             # KS2 processing library
 │   ├── ks2_generate_school_data.py        # Pipeline script
 │   ├── ks2_config.json                    # KS2 settings
-│   ├── ks2_school_attainment_202324.csv   # Downloaded from EES (2023/24)
-│   ├── ks2_school_attainment_202223.csv   # Downloaded from EES (2022/23)
-│   ├── ks2_school_attainment_202122.csv   # Downloaded from EES (2021/22)
+│   ├── ks2_school_attainment_202324.csv   # Downloaded from EES (2023/24 release; holds 2022/23 + 2023/24 rows)
 │   ├── gias_establishments.csv            # Downloaded from GIAS
 │   ├── ks2_processed_school_data.csv      # Generated output
 │   ├── ks2_geocoding_cache.json

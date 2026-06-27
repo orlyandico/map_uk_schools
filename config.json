@@ -1,8 +1,4 @@
 {
-  "clustering": {
-    "default_cluster_radius_km": 5,
-    "default_min_schools": 2
-  },
   "crime": {
     "school_crime_radius_km": 3,
     "crime_data_file": "combined_crimes.csv.gz",
@@ -48,10 +44,6 @@
       "a_star": "#000080",
       "a": "#0000FF",
       "b_or_below": "#4169E1"
-    },
-    "cluster": {
-      "circle": "#1E90FF",
-      "center_marker": "#FF4500"
     }
   },
   "data": {
@@ -73,13 +65,6 @@
     "numeric_columns": ["TB3PTSE", "TALLPPE_ALEV_1618"]
   },
   "output": {
-    "processed_csv": "processed_school_data.csv",
-    "map_filename": "schools_map.html"
-  },
-  "map": {
-    "default_zoom": 8,
-    "marker_size": 30,
-    "cluster_marker_size": 20,
-    "popup_max_width": 350
+    "processed_csv": "processed_school_data.csv"
   }
 }

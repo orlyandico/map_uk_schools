@@ -67,21 +67,14 @@ def get_default_config():
         },
         "data": {
             "ks2_performance_files": [
-                "ks2_school_attainment_data.csv",
-                "ks2_school_attainment_2122.csv",
+                "ks2_school_attainment_202122.csv",
+                "ks2_school_attainment_202223.csv",
+                "ks2_school_attainment_202324.csv",
             ],
             "gias_file": "gias_establishments.csv",
         },
         "output": {
             "processed_csv": "ks2_processed_school_data.csv",
-            "map_filename": "ks2_schools_map.html",
-        },
-        "clustering": {"default_cluster_radius_km": 5, "default_min_schools": 2},
-        "map": {
-            "default_zoom": 8,
-            "marker_size": 30,
-            "cluster_marker_size": 20,
-            "popup_max_width": 350,
         },
     }
 
@@ -234,6 +227,21 @@ def load_ks2_performance_files(file_paths, config):
         return None
 
     combined = pd.concat(all_dfs, ignore_index=True)
+
+    # EES year-releases overlap: the 2023/24 release also carries 2022/23 rows,
+    # etc. Concatenating them would list a school-year more than once and skew
+    # the per-school average. Keep one row per (school, year); files are loaded
+    # in config order, so the last (newest release) wins on a clash.
+    before = len(combined)
+    combined = combined.drop_duplicates(
+        subset=["school_urn", "time_period"], keep="last"
+    ).reset_index(drop=True)
+    if len(combined) < before:
+        logger.info(
+            f"Dropped {before - len(combined):,} duplicate school-year rows "
+            "from overlapping release files"
+        )
+
     logger.info(f"Combined KS2 performance data: {len(combined):,} rows")
     return combined
 
@@ -335,7 +343,7 @@ def load_gias(file_path, state_only=True):
     if gender_col:
         keep[gender_col] = "Gender"
 
-    df = df.rename(columns=keep)[[c for c in keep.values() if c in [keep[k] for k in keep]]]
+    df = df.rename(columns=keep)[list(keep.values())]
     df["URN"] = df["URN"].astype(str).str.strip()
 
     return df
@@ -447,61 +455,14 @@ def filter_by_percentile(df, config):
 # Address building for geocoding
 # ---------------------------------------------------------------------------
 
-def build_address(row):
-    """Build a geocodeable address string from GIAS fields."""
-    parts = []
-    for field in ["Street", "Locality", "Town", "County", "Postcode"]:
-        val = row.get(field, "")
-        if pd.notna(val) and str(val).strip() and str(val).lower() != "nan":
-            parts.append(str(val).strip())
-    return ", ".join(parts) if parts else None
+_GIAS_ADDRESS_FIELDS = ["Street", "Locality", "Town", "County", "Postcode"]
 
 
 def geocode_and_enrich(df, crime_df, config):
-    """
-    Geocode school addresses and attach crime statistics.
-
-    Wraps school_data_lib.geocode_address, using KS2 GIAS address fields.
-    """
-    from tqdm import tqdm
-
-    df = df.copy()
-    df["full_address"] = df.apply(build_address, axis=1)
-
-    total = len(df)
-    cache_hits = [0]
-    cache_misses = [0]
-    crime_calcs = [0]
-
-    logger.info(f"Geocoding {total:,} schools...")
-    with tqdm(total=total, desc="Geocoding", unit="school") as pbar:
-        geocoded = df["full_address"].apply(
-            lambda addr: school_data_lib.geocode_address(
-                addr,
-                config,
-                pbar=pbar,
-                hits_counter=cache_hits,
-                misses_counter=cache_misses,
-                crime_df=crime_df,
-                crime_calc_counter=crime_calcs,
-            )
-        )
-
-    df["Latitude"] = geocoded["Latitude"]
-    df["Longitude"] = geocoded["Longitude"]
-    df["crime_stats"] = geocoded["crime_stats"]
-
-    logger.info(
-        f"Geocoding complete — cached: {cache_hits[0]}, new: {cache_misses[0]}, "
-        f"crime stats: {crime_calcs[0]}"
+    """Geocode KS2 schools and attach crime stats, using GIAS address fields."""
+    return school_data_lib.geocode_and_enrich(
+        df, crime_df, config, _GIAS_ADDRESS_FIELDS
     )
-
-    school_data_lib.save_geocoding_cache(config)
-    school_data_lib.save_crime_cache(config)
-
-    df = df.dropna(subset=["Latitude", "Longitude"])
-    logger.info(f"Schools with valid coordinates: {len(df):,}")
-    return df
 
 
 # ---------------------------------------------------------------------------

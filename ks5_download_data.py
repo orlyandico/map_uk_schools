@@ -44,6 +44,8 @@ import zipfile
 
 import httpx
 
+import ees_download_lib as ees
+
 try:
     import pandas as pd
 except ImportError:
@@ -54,20 +56,7 @@ except ImportError:
 # Constants
 # ---------------------------------------------------------------------------
 
-EES_CONTENT_API = "https://content.explore-education-statistics.service.gov.uk/api"
 EES_PUBLICATION_SLUG = "a-level-and-other-16-to-18-results"
-
-BROWSER_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-GB,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Connection": "keep-alive",
-}
 
 # Files inside each release ZIP that we need
 PERF_FILE = "data/publication_file_rectype_13.csv"   # school-level metrics
@@ -95,96 +84,8 @@ MIN_FILE_BYTES = 10_000  # reject files smaller than this as corrupt
 
 
 # ---------------------------------------------------------------------------
-# HTTP helpers
+# Data transformation
 # ---------------------------------------------------------------------------
-
-def _make_client() -> httpx.Client:
-    return httpx.Client(
-        headers=BROWSER_HEADERS,
-        timeout=180.0,
-        follow_redirects=True,
-    )
-
-
-def _ees_get(client: httpx.Client, path: str):
-    url = f"{EES_CONTENT_API}/{path.lstrip('/')}"
-    try:
-        resp = client.get(url, headers={**BROWSER_HEADERS, "Accept": "application/json"})
-        resp.raise_for_status()
-        return resp.json()
-    except Exception as e:
-        print(f"  EES API error ({path}): {e}", file=sys.stderr)
-        return None
-
-
-# ---------------------------------------------------------------------------
-# EES release discovery
-# ---------------------------------------------------------------------------
-
-def get_ees_releases(client: httpx.Client) -> list[dict]:
-    """Return all releases for the 16-18 results publication."""
-    data = _ees_get(client, f"publications/{EES_PUBLICATION_SLUG}/releases")
-    if not data:
-        return []
-    releases = data if isinstance(data, list) else data.get("releases", [])
-    print(f"  Found {len(releases)} releases for '{EES_PUBLICATION_SLUG}'")
-    for r in releases:
-        print(f"    {r.get('yearTitle')} — {r.get('slug')} (id={r.get('id')})")
-    return releases
-
-
-def _normalise_year(year_title: str) -> str:
-    """Normalise any year format to the short 'YYYY/YY' form used by EES.
-
-    Handles: '2023-2024', '2023/2024', '2023-24', '2023/24' → '2023/24'
-    """
-    s = year_title.replace("-", "/")
-    parts = s.split("/")
-    if len(parts) == 2 and len(parts[1]) == 4:
-        return f"{parts[0]}/{parts[1][2:]}"
-    return s
-
-
-def _pick_release(year_title: str, releases: list[dict]) -> dict | None:
-    """Select the best release for a given academic year string."""
-    normalised = _normalise_year(year_title)
-    candidates = [
-        r for r in releases
-        if _normalise_year(r.get("yearTitle") or "") == normalised
-    ]
-    if not candidates:
-        print(f"  No release found for year '{year_title}'.")
-        print(f"  Available: {[r.get('yearTitle') for r in releases]}")
-        return None
-
-    def preference(r):
-        slug = r.get("slug", "")
-        if "revised" in slug:
-            return 0
-        if "provisional" in slug:
-            return 2
-        return 1
-
-    return sorted(candidates, key=preference)[0]
-
-
-# ---------------------------------------------------------------------------
-# ZIP download and data transformation
-# ---------------------------------------------------------------------------
-
-def _download_zip(client: httpx.Client, release_id: str) -> bytes | None:
-    url = f"{EES_CONTENT_API}/releases/{release_id}/files"
-    print(f"  Downloading release ZIP...")
-    try:
-        resp = client.get(url, headers={**BROWSER_HEADERS, "Accept": "application/zip"})
-        resp.raise_for_status()
-        data = resp.content
-        print(f"  ZIP size: {len(data) / 1e6:.1f} MB")
-        return data
-    except Exception as e:
-        print(f"  Failed to download ZIP: {e}")
-        return None
-
 
 def _transform_zip(zip_bytes: bytes, year_long: str) -> pd.DataFrame | None:
     """
@@ -282,14 +183,14 @@ def _save_gzip(df: pd.DataFrame, dest_path: str) -> bool:
 def download_ks5_year(client: httpx.Client, year_long: str,
                       dest_path: str, releases: list[dict]) -> bool:
     """Download and process one academic year's data."""
-    release = _pick_release(year_long, releases)
+    release = ees.pick_release(year_long, releases)
     if not release:
         return False
 
     release_id = release["id"]
     print(f"  Release: {release.get('yearTitle')} — {release.get('slug')} (id={release_id})")
 
-    zip_bytes = _download_zip(client, release_id)
+    zip_bytes = ees.download_release_zip(client, release_id)
     if not zip_bytes:
         return False
 
@@ -335,25 +236,19 @@ def main():
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
-
-    # Remove stale .tmp files from interrupted previous runs
-    for fname in os.listdir(args.output_dir):
-        if fname.endswith(".tmp"):
-            tmp = os.path.join(args.output_dir, fname)
-            print(f"Removing stale temp file: {tmp}")
-            os.remove(tmp)
+    ees.clean_stale_tmp(args.output_dir)
 
     results = {}
 
     print(f"Fetching EES release list for '{EES_PUBLICATION_SLUG}'...")
-    with _make_client() as client:
-        releases = get_ees_releases(client)
+    with ees.make_client(timeout=180.0) as client:
+        releases = ees.get_ees_releases(client, EES_PUBLICATION_SLUG)
 
     if not releases:
         print("Could not retrieve EES release list. Check connectivity.")
         sys.exit(1)
 
-    with _make_client() as client:
+    with ees.make_client(timeout=180.0) as client:
         for year in args.years:
             dest = os.path.join(args.output_dir, f"{year}_england_ks5final.csv.gz")
 
@@ -380,16 +275,7 @@ def main():
             if year != args.years[-1]:
                 time.sleep(random.uniform(1, 2))
 
-    # Summary
-    print("\n" + "=" * 50)
-    print("Download summary:")
-    all_ok = True
-    for year, ok in results.items():
-        status = "OK" if ok else "FAILED (manual download required)"
-        print(f"  {year}: {status}")
-        if not ok:
-            all_ok = False
-
+    all_ok = ees.print_summary(results)
     if all_ok:
         print("\nAll files ready. Next steps:")
         print("  python3 generate_school_data.py")

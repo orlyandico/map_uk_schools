@@ -48,7 +48,6 @@ def main():
 
     # Extract configuration values
     crime_data_file = config["crime"]["crime_data_file"]
-    school_crime_radius_km = config["crime"]["school_crime_radius_km"]
     percentile = config["filtering"]["percentile"]
     school_data_pattern = config["data"]["school_data_pattern"]
     output_csv = config["output"]["processed_csv"]
@@ -74,7 +73,9 @@ def main():
     df_selected = school_data_lib.filter_schools_by_percentile(df_selected, percentile, config)
 
     # Step 6: Geocode schools and enrich with crime data
-    df_selected = school_data_lib.geocode_and_enrich_schools(df_selected, crime_df, config)
+    df_selected = school_data_lib.geocode_and_enrich(
+        df_selected, crime_df, config, ["ADDRESS1", "TOWN", "PCODE"]
+    )
 
     # Step 7: Validate we have schools to process
     if len(df_selected) == 0:
@@ -88,24 +89,21 @@ def main():
     logger.info(f"Saved processed data to {output_csv}")
 
     # Step 9: Extract and index crime data
-    df_selected, school_crime_stats = school_data_lib.extract_and_index_crime_data(
-        df_selected, school_crime_radius_km
-    )
+    df_selected = school_data_lib.extract_and_index_crime_data(df_selected)
 
     # Print final statistics
+    crime_counts = df_selected["crime_count"]
     logger.info(f"\n{'='*50}")
     logger.info(f"PROCESSING COMPLETE")
     logger.info(f"{'='*50}")
     logger.info(f"Total schools processed: {len(df_selected)}")
-    logger.info(f"Schools with crime data: {sum(1 for s in school_crime_stats if s)}")
+    logger.info(f"Schools with crime data: {df_selected['crime_stats'].notna().sum()}")
 
-    if school_crime_stats:
-        crime_counts = [s['total_crimes'] for s in school_crime_stats if s]
-        if crime_counts:
-            logger.info(f"\nCrime Statistics (3km radius):")
-            logger.info(f"  Min: {min(crime_counts)} crimes")
-            logger.info(f"  Max: {max(crime_counts)} crimes")
-            logger.info(f"  Avg: {sum(crime_counts)/len(crime_counts):.1f} crimes")
+    if len(crime_counts):
+        logger.info(f"\nCrime Statistics (3km radius):")
+        logger.info(f"  Min: {crime_counts.min()} crimes")
+        logger.info(f"  Max: {crime_counts.max()} crimes")
+        logger.info(f"  Avg: {crime_counts.mean():.1f} crimes")
 
     logger.info(f"\nGenerated files:")
     logger.info(f"  - {output_csv}")

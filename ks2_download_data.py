@@ -17,7 +17,6 @@ Run once before ks2_generate_school_data.py.
 
 import argparse
 import io
-import json
 import os
 import random
 import re
@@ -27,8 +26,8 @@ import zipfile
 
 import httpx
 
-# EES content API — stable REST endpoints, no JS rendering needed
-EES_CONTENT_API = "https://content.explore-education-statistics.service.gov.uk/api"
+import ees_download_lib as ees
+
 EES_PUBLICATION_SLUG = "key-stage-2-attainment"
 
 # GIAS direct download base (daily extracts, date-stamped)
@@ -36,26 +35,6 @@ GIAS_DOWNLOAD_BASE = (
     "https://ea-edubase-api-prod.azurewebsites.net"
     "/edubase/downloads/public/edubasealldata{date}.csv"
 )
-GIAS_ALT_URL = (
-    "https://get-information-schools.service.gov.uk"
-    "/Downloads/GetDownload/edubasealldata"
-)
-
-# Browser-like headers that avoid trivial bot-detection
-BROWSER_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-GB,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Connection": "keep-alive",
-}
-
-# Target academic years we want (time_period codes as they appear in EES)
-TARGET_YEARS = {"2021-22", "2022-23", "2023-24"}
 
 # Filename pattern to identify the school-level performance CSV inside release ZIPs
 SCHOOL_PERF_PATTERN = re.compile(
@@ -64,133 +43,55 @@ SCHOOL_PERF_PATTERN = re.compile(
 
 
 # ---------------------------------------------------------------------------
-# HTTP helpers — adapted from adzuna_client.py
+# ZIP extraction
 # ---------------------------------------------------------------------------
 
-def _make_client():
-    """Return an httpx client with browser-like headers and generous timeout."""
-    return httpx.Client(
-        headers=BROWSER_HEADERS,
-        timeout=120.0,
-        follow_redirects=True,
-    )
-
-
-
-def _download_stream(client: httpx.Client, url: str, dest_path: str,
-                     description: str, max_retries: int = 3) -> bool:
-    """Stream-download a file to disk with retries and progress output."""
-    for attempt in range(1, max_retries + 1):
-        try:
-            print(f"Downloading {description} (attempt {attempt})...")
-            print(f"  URL: {url}")
-            with client.stream("GET", url) as resp:
-                resp.raise_for_status()
-                total = int(resp.headers.get("content-length", 0))
-                downloaded = 0
-                with open(dest_path, "wb") as f:
-                    for chunk in resp.iter_bytes(chunk_size=65536):
-                        f.write(chunk)
-                        downloaded += len(chunk)
-                        if total:
-                            print(
-                                f"\r  {downloaded / 1e6:.1f} / {total / 1e6:.1f} MB "
-                                f"({downloaded / total * 100:.0f}%)",
-                                end="", flush=True,
-                            )
-            print(f"\n  Saved to {dest_path} ({os.path.getsize(dest_path) / 1e6:.1f} MB)")
-            return True
-        except httpx.HTTPStatusError as e:
-            print(f"\n  HTTP {e.response.status_code}")
-        except Exception as e:
-            print(f"\n  Error: {e}")
-
-        if attempt < max_retries:
-            delay = random.uniform(2, 5)
-            print(f"  Retrying in {delay:.1f}s...")
-            time.sleep(delay)
-
-    return False
-
-
-# ---------------------------------------------------------------------------
-# EES content API helpers
-# ---------------------------------------------------------------------------
-
-def _ees_get(client: httpx.Client, path: str) -> dict | None:
-    """GET a JSON endpoint from the EES content API."""
-    url = f"{EES_CONTENT_API}/{path.lstrip('/')}"
-    try:
-        resp = client.get(url, headers={**BROWSER_HEADERS, "Accept": "application/json"})
-        resp.raise_for_status()
-        return resp.json()
-    except Exception as e:
-        print(f"  EES API error ({path}): {e}", file=sys.stderr)
-        return None
-
-
-def get_ees_releases(client: httpx.Client) -> list[dict]:
-    """
-    Return all releases for the KS2 attainment publication.
-
-    Uses /publications/{slug}/releases (not /publications/{slug} which
-    returns an empty releases list).  Prefers the "revised" release when
-    multiple releases exist for the same year.
-    """
-    data = _ees_get(client, f"publications/{EES_PUBLICATION_SLUG}/releases")
-    if not data:
-        return []
-    releases = data if isinstance(data, list) else data.get("releases", [])
-    print(f"  Found {len(releases)} releases for '{EES_PUBLICATION_SLUG}'")
-    for r in releases:
-        print(f"    {r.get('yearTitle')} — {r.get('slug')} (id={r.get('id')})")
-    return releases
-
-
-def get_release_zip_url(release_id: str) -> str:
-    """Return the ZIP download URL for a given release id (not releaseId)."""
-    return f"{EES_CONTENT_API}/releases/{release_id}/files"
-
-
-def _extract_school_perf_csv(zip_bytes: bytes, dest_path: str) -> bool:
+def _extract_school_perf_csv(zip_bytes: bytes, dest_path: str):
     """
     Extract the school-level performance CSV from a release ZIP and save it.
 
-    Tries to match files by pattern; falls back to the largest CSV.
-    Writes to a .tmp file first; renames to dest_path only on success.
+    Selects the CSV that carries a per-school URN column. Writes to a .tmp file
+    first; renames to dest_path only on success.
+
+    Returns:
+        True  — a school-level CSV was saved.
+        None  — the release has no school-level file (expected for pre-2022/23,
+                where DfE publishes only aggregated KS2 data, not per-school).
+        False — a genuine error (no CSVs in the ZIP, or an extraction failure).
     """
     tmp_path = dest_path + ".tmp"
     try:
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-            names = zf.namelist()
-            # Prefer files matching our pattern
-            candidates = [n for n in names if SCHOOL_PERF_PATTERN.search(n)]
-            if not candidates:
-                # Fall back to largest CSV
-                csv_names = [n for n in names if n.endswith(".csv")]
-                if not csv_names:
-                    print("  No CSVs found in ZIP.", file=sys.stderr)
-                    return False
-                candidates = [
-                    max(csv_names, key=lambda n: zf.getinfo(n).file_size)
-                ]
-            chosen = candidates[0]
+            csv_names = [n for n in zf.namelist() if n.endswith(".csv")]
+            if not csv_names:
+                print("  No CSVs found in ZIP.", file=sys.stderr)
+                return False
+
+            def has_urn(name):
+                """True if the CSV's header carries a per-school URN column."""
+                with zf.open(name) as f:
+                    header = f.readline().decode("utf-8", errors="replace")
+                cols = [c.strip().strip('"') for c in header.split(",")]
+                return any(c in cols for c in ("school_urn", "urn", "URN"))
+
+            # The school-level file is the one with a URN column. Confirm by
+            # header rather than picking the largest CSV, so we never grab an
+            # aggregated (national/LA/regional) file that happens to be bigger.
+            # A name hint just decides which order we probe in.
+            hinted = [n for n in csv_names if SCHOOL_PERF_PATTERN.search(n)]
+            ordered = hinted + [n for n in csv_names if n not in hinted]
+            chosen = next((n for n in ordered if has_urn(n)), None)
+            if chosen is None:
+                print(
+                    "  No school-level (per-URN) file in this release — EES only "
+                    "publishes school-level KS2 attainment from 2022/23 onwards.",
+                    file=sys.stderr,
+                )
+                return None
+
             print(f"  Extracting: {chosen}")
             with zf.open(chosen) as src:
                 raw = src.read()
-
-            # Validate it is school-level data (must have a school_urn column)
-            header = raw.split(b"\n")[0].decode("utf-8", errors="replace")
-            cols = [c.strip().strip('"') for c in header.split(",")]
-            if not any(c in cols for c in ("school_urn", "urn", "URN")):
-                print(
-                    f"  Extracted file has no school_urn column "
-                    f"(geographic_level is probably national/LA). "
-                    f"This release does not contain school-level data.",
-                    file=sys.stderr,
-                )
-                return False
-
             with open(tmp_path, "wb") as dst:
                 dst.write(raw)
         os.replace(tmp_path, dest_path)
@@ -204,7 +105,7 @@ def _extract_school_perf_csv(zip_bytes: bytes, dest_path: str) -> bool:
 
 
 def download_ees_year(client: httpx.Client, year_title: str,
-                      dest_path: str, releases: list[dict]) -> bool:
+                      dest_path: str, releases: list[dict]):
     """
     Download the school-level performance CSV for a specific academic year.
 
@@ -212,44 +113,21 @@ def download_ees_year(client: httpx.Client, year_title: str,
     Normalises dash/slash so "2023-24" matches yearTitle "2023/24".
     When multiple releases exist for the same year (e.g. provisional +
     revised), prefers "revised".
+
+    Returns the tri-state of _extract_school_perf_csv (True saved / None no
+    school-level file in the release / False genuine error), or False if the
+    year has no EES release at all or the ZIP could not be downloaded.
     """
-    normalised = year_title.replace("-", "/")  # "2023-24" → "2023/24"
-
-    candidates = [
-        r for r in releases
-        if (r.get("yearTitle") or "").replace("-", "/") == normalised
-    ]
-
-    if not candidates:
-        print(f"  No release found for year '{year_title}'.")
-        print(f"  Available: {[r.get('yearTitle') for r in releases]}")
+    matched = ees.pick_release(year_title, releases)
+    if not matched:
         return False
 
-    # Prefer "revised" over "provisional" over anything else
-    def preference(r):
-        slug = r.get("slug", "")
-        if "revised" in slug:
-            return 0
-        if "provisional" in slug:
-            return 2
-        return 1
-
-    matched = sorted(candidates, key=preference)[0]
     release_id = matched["id"]  # use "id", not "releaseId"
     year_display = matched.get("yearTitle") or matched.get("title")
     print(f"  Matched release: {year_display} — {matched.get('slug')} (id={release_id})")
 
-    zip_url = get_release_zip_url(release_id)
-
-    # Download ZIP into memory (these are typically 5-30 MB)
-    print(f"  Downloading release ZIP...")
-    try:
-        resp = client.get(zip_url, headers={**BROWSER_HEADERS, "Accept": "application/zip"})
-        resp.raise_for_status()
-        zip_bytes = resp.content
-        print(f"  ZIP size: {len(zip_bytes) / 1e6:.1f} MB")
-    except Exception as e:
-        print(f"  Failed to download ZIP: {e}")
+    zip_bytes = ees.download_release_zip(client, release_id)
+    if not zip_bytes:
         return False
 
     return _extract_school_perf_csv(zip_bytes, dest_path)
@@ -271,7 +149,7 @@ def download_gias(dest_path: str) -> bool:
 
     today = datetime.date.today()
     client_headers = {
-        **BROWSER_HEADERS,
+        **ees.BROWSER_HEADERS,
         "Referer": "https://get-information-schools.service.gov.uk/",
     }
 
@@ -332,9 +210,11 @@ def main():
     parser.add_argument(
         "--years",
         nargs="+",
-        default=["2023-24", "2022-23", "2021-22"],
+        default=["2023-24"],
         metavar="YEAR",
-        help="Academic years to download, e.g. 2023-24 2022-23 (default: last 3 years)",
+        help="Academic years to download (default: 2023-24). The latest release "
+             "embeds prior years' school-level rows, so one year is usually "
+             "enough. Pre-2022/23 years have no school-level data and are skipped.",
     )
     parser.add_argument(
         "--gias-file",
@@ -357,21 +237,16 @@ def main():
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
-
-    # Remove any stale .tmp files left by interrupted previous runs
-    for fname in os.listdir(args.output_dir):
-        if fname.endswith(".tmp"):
-            tmp = os.path.join(args.output_dir, fname)
-            print(f"Removing stale temp file: {tmp}")
-            os.remove(tmp)
+    ees.clean_stale_tmp(args.output_dir)
 
     results = {}
+    skipped = []  # years with no school-level data — expected, not a failure
 
     # --- EES downloads ---
     if not args.skip_ees:
         print(f"Fetching EES release list for '{EES_PUBLICATION_SLUG}'...")
-        with _make_client() as client:
-            releases = get_ees_releases(client)
+        with ees.make_client() as client:
+            releases = ees.get_ees_releases(client, EES_PUBLICATION_SLUG)
 
         if not releases:
             print("Could not retrieve EES release list. Check connectivity.")
@@ -391,17 +266,25 @@ def main():
                     print(f"Found incomplete file (too small), re-downloading: {dest}")
 
                 print(f"\nDownloading KS2 data for {year}...")
-                with _make_client() as client:
-                    ok = download_ees_year(client, year, dest, releases)
-                results[f"ees_{year}"] = ok
+                with ees.make_client() as client:
+                    status = download_ees_year(client, year, dest, releases)
 
-                if not ok:
-                    print(f"\n  *** Manual download for {year}: ***")
-                    print(f"  1. Go to: https://explore-education-statistics.service.gov.uk"
-                          f"/find-statistics/key-stage-2-attainment/{year}")
-                    print(f"  2. Click 'Download all data (ZIP)'")
-                    print(f"  3. Extract the school-level performance CSV")
-                    print(f"  4. Save as: {dest}")
+                if status is None:
+                    # Release exists but has no school-level file: expected for
+                    # pre-2022/23. Don't count it as a failure or print manual
+                    # steps — there is nothing to download by hand.
+                    print(f"  Skipping {year}: no school-level data published "
+                          f"(the latest release already covers prior years).")
+                    skipped.append(f"ees_{year}")
+                else:
+                    results[f"ees_{year}"] = status
+                    if not status:
+                        print(f"\n  *** Manual download for {year}: ***")
+                        print(f"  1. Go to: https://explore-education-statistics.service.gov.uk"
+                              f"/find-statistics/key-stage-2-attainment/{year}")
+                        print(f"  2. Click 'Download all data (ZIP)'")
+                        print(f"  3. Extract the school-level performance CSV")
+                        print(f"  4. Save as: {dest}")
 
                 time.sleep(random.uniform(1, 2))  # polite delay between releases
     else:
@@ -425,15 +308,9 @@ def main():
         results["gias"] = os.path.exists(gias_dest)
 
     # --- Summary ---
-    print("\n" + "=" * 50)
-    print("Download summary:")
-    all_ok = True
-    for key, ok in results.items():
-        status = "OK" if ok else "FAILED (manual download required)"
-        print(f"  {key}: {status}")
-        if not ok:
-            all_ok = False
-
+    all_ok = ees.print_summary(results)
+    for key in skipped:
+        print(f"  {key}: SKIPPED (no school-level data for this year)")
     if all_ok:
         print("\nAll files ready. Next step:")
         print("  python3 ks2_generate_school_data.py")

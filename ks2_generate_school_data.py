@@ -40,7 +40,6 @@ def main():
         return
 
     crime_data_file = config["crime"]["crime_data_file"]
-    school_crime_radius_km = config["crime"]["school_crime_radius_km"]
     output_csv = config["output"]["processed_csv"]
     ks2_files = config["data"]["ks2_performance_files"]
     gias_file = config["data"]["gias_file"]
@@ -93,16 +92,14 @@ def main():
     logger.info(f"Saved processed data to {output_csv}")
 
     # Step 9: Compute crime indices
-    df, crime_stats_list = school_data_lib.extract_and_index_crime_data(
-        df, school_crime_radius_km
-    )
+    df = school_data_lib.extract_and_index_crime_data(df)
 
     # Summary
     logger.info(f"\n{'='*50}")
     logger.info("PROCESSING COMPLETE")
     logger.info(f"{'='*50}")
     logger.info(f"Total schools: {len(df):,}")
-    logger.info(f"Schools with crime data: {sum(1 for s in crime_stats_list if s)}")
+    logger.info(f"Schools with crime data: {df['crime_stats'].notna().sum()}")
     logger.info(f"expected_pct — min: {df['expected_pct'].min():.1f}%  "
                 f"max: {df['expected_pct'].max():.1f}%  "
                 f"mean: {df['expected_pct'].mean():.1f}%")

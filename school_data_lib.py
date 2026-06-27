@@ -68,7 +68,6 @@ def load_config(config_path="config.json"):
 def get_default_config():
     """Return default configuration if config file is missing"""
     return {
-        "clustering": {"default_cluster_radius_km": 5, "default_min_schools": 2},
         "crime": {
             "school_crime_radius_km": 3,
             "crime_data_file": "combined_crimes.csv.gz",
@@ -92,7 +91,6 @@ def get_default_config():
         "colors": {
             "independent": {"a_star": "#FF0000", "a": "#FFA500", "b_or_below": "#FFD700"},
             "state": {"a_star": "#000080", "a": "#0000FF", "b_or_below": "#4169E1"},
-            "cluster": {"circle": "#1E90FF", "center_marker": "#FF4500"},
         },
         "data": {
             "school_data_pattern": "20*_england_ks5*.csv*",
@@ -114,13 +112,6 @@ def get_default_config():
         },
         "output": {
             "processed_csv": "processed_school_data.csv",
-            "map_filename": "schools_map.html",
-        },
-        "map": {
-            "default_zoom": 8,
-            "marker_size": 30,
-            "cluster_marker_size": 20,
-            "popup_max_width": 350,
         },
     }
 
@@ -139,21 +130,6 @@ def validate_config(config):
         bool: True if validation passes
     """
     errors = []
-
-    # Clustering validation
-    try:
-        cluster_radius = config["clustering"]["default_cluster_radius_km"]
-        if cluster_radius <= 0:
-            errors.append("Cluster radius must be positive (got {})".format(cluster_radius))
-    except KeyError as e:
-        errors.append(f"Missing clustering config key: {e}")
-
-    try:
-        min_schools = config["clustering"]["default_min_schools"]
-        if min_schools < 1:
-            errors.append("Minimum schools per cluster must be at least 1 (got {})".format(min_schools))
-    except KeyError as e:
-        errors.append(f"Missing clustering config key: {e}")
 
     # Crime validation
     try:
@@ -192,14 +168,6 @@ def validate_config(config):
             errors.append("Grade thresholds must be non-negative")
     except KeyError as e:
         errors.append(f"Missing grading config key: {e}")
-
-    # Map validation
-    try:
-        zoom = config["map"]["default_zoom"]
-        if zoom < 1 or zoom > 20:
-            errors.append("Map zoom must be between 1 and 20 (got {})".format(zoom))
-    except KeyError as e:
-        errors.append(f"Missing map config key: {e}")
 
     # If there are errors, raise with all messages
     if errors:
@@ -343,6 +311,20 @@ def save_geocoding_cache(config):
         logging.error(f"Error saving geocoding cache: {e}")
 
 
+def join_address(row, fields):
+    """Build a geocodeable address from a row, skipping NaN/empty/'nan' parts.
+
+    Shared by the KS5 and KS2 pipelines and the map generator so the address
+    string (which is the geocoding cache key) is built identically everywhere.
+    """
+    parts = []
+    for field in fields:
+        value = row.get(field)
+        if pd.notna(value) and str(value).strip() and str(value).lower() != "nan":
+            parts.append(str(value))
+    return ", ".join(parts) if parts else None
+
+
 def point_score_to_grade(point_score, config):
     """Convert point score to grade"""
     a_star_threshold = config["grading"]["a_star_threshold"]
@@ -374,10 +356,14 @@ def geocode_address(
     region_name = config["geocoding"]["region_name"]
     school_crime_radius_km = config["crime"]["school_crime_radius_km"]
 
-    if not address or pd.isna(address):
+    def _emit(lat=None, lon=None, crime_stats=None):
+        """Advance the progress bar and return the row's geocoding result."""
         if pbar:
             pbar.update(1)
-        return pd.Series({"Latitude": None, "Longitude": None, "crime_stats": None})
+        return pd.Series({"Latitude": lat, "Longitude": lon, "crime_stats": crime_stats})
+
+    if not address or pd.isna(address):
+        return _emit()
 
     # Check cache first
     if address in geocoding_cache:
@@ -400,10 +386,7 @@ def geocode_address(
         if pbar:
             update_geocoding_progress(pbar, hits_counter, misses_counter, crime_calc_counter)
             hits_counter[0] += 1
-            pbar.update(1)
-        return pd.Series(
-            {"Latitude": lat, "Longitude": lon, "crime_stats": crime_stats}
-        )
+        return _emit(lat, lon, crime_stats)
 
     try:
         if pbar:
@@ -430,30 +413,20 @@ def geocode_address(
 
             # Store in cache
             geocoding_cache[address] = (lat, lon)
-            if pbar:
-                pbar.update(1)
-            return pd.Series(
-                {"Latitude": lat, "Longitude": lon, "crime_stats": crime_stats}
-            )
+            return _emit(lat, lon, crime_stats)
 
         # Cache negative results
         geocoding_cache[address] = (None, None)
-        if pbar:
-            pbar.update(1)
-        return pd.Series({"Latitude": None, "Longitude": None, "crime_stats": None})
+        return _emit()
 
     except ClientError as e:
         logging.error(
             f"AWS Error geocoding {address}: {e.response['Error']['Code']} - {e.response['Error']['Message']}"
         )
-        if pbar:
-            pbar.update(1)
-        return pd.Series({"Latitude": None, "Longitude": None, "crime_stats": None})
+        return _emit()
     except Exception as e:
         logging.error(f"Error geocoding {address}: {e}")
-        if pbar:
-            pbar.update(1)
-        return pd.Series({"Latitude": None, "Longitude": None, "crime_stats": None})
+        return _emit()
 
 
 def haversine_vectorized(lat1, lon1, lat2_array, lon2_array):
@@ -807,39 +780,35 @@ def filter_schools_by_percentile(df_selected, percentile, config):
     return df_filtered
 
 
-def geocode_and_enrich_schools(df_selected, crime_df, config):
+def geocode_and_enrich(df, crime_df, config, address_fields):
     """
-    Geocode school addresses and calculate crime statistics
+    Geocode school addresses and calculate crime statistics.
+
+    Shared by the KS5 and KS2 pipelines; ``address_fields`` is the only thing
+    that differs between them (the GIAS column set vs the KS5 column set).
 
     Args:
-        df_selected: Filtered school dataframe
+        df: Filtered school dataframe
         crime_df: Crime data dataframe (or None)
         config: Configuration dictionary
+        address_fields: Column names joined into the geocoding address
 
     Returns:
         pd.DataFrame: Schools with coordinates and crime stats
     """
-    # Create full address for geocoding, handling NaN values
-    def build_address(row):
-        """Build address string from row, filtering out NaN/empty values"""
-        parts = []
-        for field in ['ADDRESS1', 'TOWN', 'PCODE']:
-            value = row[field]
-            if pd.notna(value) and str(value).strip() and str(value).lower() != 'nan':
-                parts.append(str(value))
-        return ", ".join(parts) if parts else None
+    df = df.copy()
+    df["full_address"] = df.apply(
+        lambda row: join_address(row, address_fields), axis=1
+    )
 
-    df_selected["full_address"] = df_selected.apply(build_address, axis=1)
-
-    # Geocode addresses with progress tracking
-    total_addresses = len(df_selected)
+    total = len(df)
     cache_hits = [0]
     cache_misses = [0]
     crime_calculations = [0]
 
-    logging.info(f"Processing {total_addresses} addresses (geocoding and crime stats)...")
-    with tqdm(total=total_addresses, desc="Processing", unit="address") as pbar:
-        geocoded_results = df_selected["full_address"].apply(
+    logging.info(f"Processing {total} addresses (geocoding and crime stats)...")
+    with tqdm(total=total, desc="Processing", unit="address") as pbar:
+        geocoded_results = df["full_address"].apply(
             lambda addr: geocode_address(
                 addr,
                 config,
@@ -851,9 +820,9 @@ def geocode_and_enrich_schools(df_selected, crime_df, config):
             )
         )
 
-    df_selected["Latitude"] = geocoded_results["Latitude"]
-    df_selected["Longitude"] = geocoded_results["Longitude"]
-    df_selected["crime_stats"] = geocoded_results["crime_stats"]
+    df["Latitude"] = geocoded_results["Latitude"]
+    df["Longitude"] = geocoded_results["Longitude"]
+    df["crime_stats"] = geocoded_results["crime_stats"]
 
     logging.info(
         f"Processing complete - Geocoding: {cache_hits[0]} cached, {cache_misses[0]} new | "
@@ -865,52 +834,27 @@ def geocode_and_enrich_schools(df_selected, crime_df, config):
     save_crime_cache(config)
 
     # Remove schools without coordinates
-    df_selected = df_selected.dropna(subset=["Latitude", "Longitude"])
-    logging.info(f"Schools with valid coordinates: {len(df_selected)}")
+    df = df.dropna(subset=["Latitude", "Longitude"])
+    logging.info(f"Schools with valid coordinates: {len(df)}")
 
-    return df_selected
+    return df
 
 
-def extract_and_index_crime_data(df_selected, school_crime_radius_km):
+def extract_and_index_crime_data(df_selected):
     """
-    Extract crime statistics and calculate crime indices
+    Add crime_count and percentile crime_index columns from crime_stats.
 
     Args:
-        df_selected: Schools with crime_stats column
-        school_crime_radius_km: Radius for school crime calculations
+        df_selected: Schools with a crime_stats column
 
     Returns:
-        tuple: (df_selected with crime_count and crime_index, school_crime_stats list)
+        pd.DataFrame: df_selected with crime_count and crime_index columns
     """
     logging.info("Extracting crime statistics from geocoding cache...")
 
-    def extract_crime_count(crime_stats):
-        """Extract total crime count from stats dict"""
-        if crime_stats:
-            return crime_stats["total_crimes"]
-        return 0
+    df_selected["crime_count"] = df_selected["crime_stats"].apply(
+        lambda s: s["total_crimes"] if s else 0
+    )
+    df_selected["crime_index"] = df_selected["crime_count"].rank(pct=True)
 
-    # Vectorized extraction of crime counts
-    df_selected["crime_count"] = df_selected["crime_stats"].apply(extract_crime_count)
-
-    # Build school_crime_stats list with fallback for missing data
-    school_crime_stats = []
-    for crime_stat in df_selected["crime_stats"]:
-        if crime_stat:
-            school_crime_stats.append(crime_stat)
-        else:
-            # Fallback for missing crime data
-            school_crime_stats.append({
-                "total_crimes": 0,
-                "crime_types": {},
-                "radius_km": school_crime_radius_km,
-            })
-
-    # Save crime cache after processing
-    # Note: This is handled by the caller now
-
-    # Calculate crime indices using percentile ranking
-    crime_counts = df_selected["crime_count"].copy()
-    df_selected["crime_index"] = crime_counts.rank(pct=True)
-
-    return df_selected, school_crime_stats
+    return df_selected

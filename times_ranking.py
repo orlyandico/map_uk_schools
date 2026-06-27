@@ -95,11 +95,3 @@ class TimesRanking:
             if e["tokens"] <= toks or toks <= e["tokens"]:
                 return e["rank"]
         return None
-
-
-def load_secondary(path=SECONDARY_CSV):
-    return TimesRanking(path)
-
-
-def load_primary(path=PRIMARY_CSV):
-    return TimesRanking(path)

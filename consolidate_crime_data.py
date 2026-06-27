@@ -3,8 +3,6 @@ import json
 import pandas as pd
 import glob
 import argparse
-import gzip
-import shutil
 
 
 # Load configuration
@@ -91,27 +89,12 @@ def process_crime_data(root_dir=None, output_file=None):
 
         # Determine if we should compress
         compress_output = config["crime_processing"]["compress_output"]
-
         if compress_output and not output_file.endswith('.gz'):
             output_file = f"{output_file}.gz"
 
-        if output_file.endswith('.gz'):
-            # Write CSV then gzip it
-            temp_csv = output_file.replace('.gz', '')
-            combined_df.to_csv(temp_csv, index=False)
-
-            # Gzip the file
-            with open(temp_csv, 'rb') as f_in:
-                with gzip.open(output_file, 'wb') as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-
-            # Remove the uncompressed file
-            os.remove(temp_csv)
-            print(f"Saved compressed output to: {output_file}")
-        else:
-            # Write directly without compression
-            combined_df.to_csv(output_file, index=False)
-            print(f"Saved output to: {output_file}")
+        # pandas infers gzip compression from a .gz extension
+        combined_df.to_csv(output_file, index=False)
+        print(f"Saved output to: {output_file}")
     else:
         print("No valid CSV files found")
 
