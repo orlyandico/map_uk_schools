@@ -19,3 +19,6 @@ crime_cache.json
 # Personal address lists (do not commit)
 addresses.txt
 
+# Serena MCP server local state (per-machine config, symbol cache, memories)
+.serena/
+
