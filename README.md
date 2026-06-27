@@ -403,39 +403,56 @@ df = pd.read_csv("crime_lookup_output.csv", header=[0, 1], index_col=0)
 
 ---
 
-## Grammar School Ethnicity Report (Standalone)
+## State Secondary Ethnicity Report (Standalone)
 
-`grammar_ethnicity_report.py` generates a per-school ethnicity breakdown for a chosen set of English state grammar schools, as a Markdown report. It is independent of the map pipelines — it does not use AWS, crime data or the geocoding caches.
+`grammar_ethnicity_report.py` generates a per-school ethnicity breakdown for the **Times / Sunday Times Parent Power state-secondary league table**, as a Markdown report sorted by Parent Power rank (rank 1 first). It is independent of the map pipelines — it does not use AWS, crime data or the geocoding caches.
 
-Unlike the A-level performance pipelines, this draws on the **DfE school census** rather than the performance tables. It uses the *school-level underlying data* file from "Schools, pupils and their characteristics" (one row per school, **unsuppressed**), which carries the full detailed ethnic-group split per school (White British, Indian, Pakistani, Bangladeshi, Chinese, Black African, Mixed, etc.) plus EAL.
+The cohort comes from the Parent Power state-secondary CSV (every school by default); the ethnicity figures come from the **DfE school census**. It uses the *school-level underlying data* file from "Schools, pupils and their characteristics" (one row per school, **unsuppressed**), which carries the full detailed ethnic-group split per school (White British, Indian, Pakistani, Bangladeshi, Chinese, Black African, Mixed, etc.) plus EAL.
+
+Each Parent Power school is matched to a census URN at runtime by name + location (a token-overlap score with religious/suffix normalisation, e.g. "St" ≈ "Saint", "RC" ≈ "Catholic", trailing "Academy" ignored; location breaks ties). Schools that can't be matched are listed in the report — almost all are in **Northern Ireland or Wales**, which the England-only census does not cover.
 
 **State schools only.** Independent schools submit an aggregate census return with no ethnicity breakdown, so per-school ethnicity does not exist for them and they cannot be included.
 
 ### Usage
 
+First produce the Parent Power state-secondary CSV (see [Times Parent Power ranks](#times-parent-power-ranks-optional)):
+
 ```bash
-python3 grammar_ethnicity_report.py                 # download census + write grammar_ethnicity_report.md
-python3 grammar_ethnicity_report.py --csv local.csv # use a local school-level CSV instead
-python3 grammar_ethnicity_report.py -o out.md        # choose output path
-python3 grammar_ethnicity_report.py --force          # re-download even if cached
+python3 extract_times_table.py the-top-state-secondary-schools best_schools_2025_state_secondary.csv
 ```
 
-The census file (~22 MB) is downloaded once and cached as `spc_school_level.csv` (gitignored). Stdlib only — no extra dependencies. The script handles the file's Windows-1252 encoding and quoted, comma-containing school names.
+Then run the report:
 
-To change the cohort, edit the `SCHOOLS` dict (URN → display label) at the top of the script. To roll to a newer census, update `CSV_URL` and `CENSUS_LABEL` to the new EES release's file link.
+```bash
+python3 grammar_ethnicity_report.py                 # download census + write grammar_ethnicity_report.md
+python3 grammar_ethnicity_report.py --top 100        # exactly 100 matched schools (over-fetches the table; 0/omit = all)
+python3 grammar_ethnicity_report.py --times-csv f.csv # use a different Parent Power CSV
+python3 grammar_ethnicity_report.py --csv local.csv # use a local census CSV instead of downloading
+python3 grammar_ethnicity_report.py -o out.md        # choose output path
+python3 grammar_ethnicity_report.py --force          # re-download the census even if cached
+```
+
+The census file (~22 MB) is downloaded once and cached as `spc_school_level.csv` (gitignored). No Python package dependencies. The download uses `curl` when available (the EES CDN serves over HTTP/2 and supports no resume, which the stdlib HTTP/1.1 client handles unreliably) and falls back to a `urllib` retry loop otherwise. The script handles the file's Windows-1252 encoding and quoted, comma-containing school names.
+
+To roll to a newer census, update `CSV_URL` and `CENSUS_LABEL` to the new EES release's file link. To refresh the cohort, regenerate the Parent Power CSV with `extract_times_table.py`.
 
 ### Output
 
-The report (`grammar_ethnicity_report.md`) contains three tables, sorted by minority share:
+The report (`grammar_ethnicity_report.md`) contains three tables, each carrying the Parent Power rank and sorted by it (rank 1 first):
 - **Summary** — % ethnic minority (= 100 − % White British), % White British, % EAL
 - **Group-by-group breakdown** — every ethnic group as a % of pupils
 - **Largest single minority group, by school** — auto-derived per school
 
-Percentages are whole-school headcount (not sixth-form/intake specific).
+A closing note lists any Parent Power schools that could not be matched to the census. Percentages are whole-school headcount (not sixth-form/intake specific).
 
 ### PDF
 
-A GitHub-faithful PDF (`grammar_ethnicity_report.pdf`) is produced from the Markdown with `cmark-gfm` → HTML (GitHub CSS) → `weasyprint`. Each heading is wrapped with its table in a non-breaking section (A4 landscape) so titles are never stranded from their tables.
+A GitHub-faithful PDF (`grammar_ethnicity_report.pdf`) is produced by `build_grammar_pdf.sh`, which pipes the Markdown through `cmark-gfm` → HTML (inline CSS) → `wkhtmltopdf`, rendered A4 **landscape** with auto-sized table columns so the wide group-by-group table fits without stretching the School column:
+
+```bash
+./build_grammar_pdf.sh                                  # defaults: report .md -> .pdf, 11px font
+./build_grammar_pdf.sh in.md out.pdf 10                  # custom input/output and font size
+```
 
 ---
 
@@ -615,11 +632,13 @@ map_uk_schools/
 │   ├── combined_crimes.csv.gz         # Generated crime data
 │   └── crime_lookup.py                # Address-based crime aggregator (standalone)
 │
-└── Grammar ethnicity report (standalone)
-    ├── grammar_ethnicity_report.py    # Per-school ethnicity report generator (DfE school census)
-    ├── grammar_ethnicity_report.md    # Generated Markdown report
-    ├── grammar_ethnicity_report.pdf   # Generated PDF (cmark-gfm + weasyprint)
-    └── spc_school_level.csv           # Downloaded census cache (gitignored)
+└── State secondary ethnicity report (standalone)
+    ├── grammar_ethnicity_report.py             # Ethnicity report (Parent Power cohort × DfE census)
+    ├── build_grammar_pdf.sh                     # Markdown -> landscape PDF builder
+    ├── best_schools_2025_state_secondary.csv   # Times state-secondary cohort + ranks
+    ├── grammar_ethnicity_report.md             # Generated Markdown report
+    ├── grammar_ethnicity_report.pdf            # Generated PDF (cmark-gfm + wkhtmltopdf, landscape)
+    └── spc_school_level.csv                    # Downloaded census cache (gitignored)
 ```
 
 ---
