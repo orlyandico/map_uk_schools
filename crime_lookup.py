@@ -7,8 +7,8 @@ is given, by prompting interactively (type STOP or END to finish). Each
 address is geocoded via Amazon Location Service (using the place index
 configured in config.json). All crimes from combined_crimes.csv.gz within
 500 m of each point (or the radii given via --radius 250,500,1000) are
-aggregated and written to a side-by-side CSV with one column per address
-(short code) and one row per (radius, crime type).
+aggregated and written to a CSV with one row per address (full address in
+column A) and one column per (radius, crime type).
 """
 
 import argparse
@@ -142,22 +142,27 @@ def write_csv(path, addresses, counts_by_addr, all_crime_types, radii_m):
     """
     counts_by_addr: dict of code -> dict of (radius_m, crime_type) -> int.
 
-    CSV layout:
-        Address legend : one row per address — [<full address>, <short code>]
-        Column header  : "Radius_m", "Crime type", A1, A2, ...
-        Then one row per (radius, crime type).
+    CSV layout (addresses as rows, crime types as columns):
+        Header row 1 : "", <radius_m repeated for each crime type, per radius>
+        Header row 2 : "Address", <crime type cycled, per radius>
+        Data rows    : <full address>, <count for each (radius, crime type)>
     """
     with open(path, "w", newline="") as f:
         w = csv.writer(f)
+        row1 = [""]
+        row2 = ["Address"]
+        for r in radii_m:
+            for ct in all_crime_types:
+                row1.append(r)
+                row2.append(ct)
+        w.writerow(row1)
+        w.writerow(row2)
         for a in addresses:
-            w.writerow([a.label, a.code])
-        w.writerow(["Radius_m", "Crime type"] + [a.code for a in addresses])
-        for radius_m in radii_m:
-            for crime_type in all_crime_types:
-                row = [radius_m, crime_type]
-                for a in addresses:
-                    row.append(counts_by_addr[a.code].get((radius_m, crime_type), 0))
-                w.writerow(row)
+            row = [a.label]
+            for r in radii_m:
+                for ct in all_crime_types:
+                    row.append(counts_by_addr[a.code].get((r, ct), 0))
+            w.writerow(row)
 
 
 def main():

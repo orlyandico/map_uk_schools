@@ -4,7 +4,7 @@ Generate processed school data from UK government CSV files
 This script processes school performance CSVs, geocodes addresses, calculates
 crime statistics, and saves processed data ready for web app generation.
 
-Run this first, then use create_standalone_app.py to generate the web application.
+Run this first, then use combined_create_standalone_app.py to generate the web application.
 """
 
 import logging
@@ -18,7 +18,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('plot_schools.log'),
+        logging.FileHandler('generate_school_data.log'),
         logging.StreamHandler()
     ]
 )
@@ -111,7 +111,7 @@ def main():
     logger.info(f"  - {output_csv}")
     logger.info(f"  - geocoding_cache.json")
     logger.info(f"  - crime_cache.json")
-    logger.info(f"\nNext step: Run 'python3 create_standalone_app.py' to generate web app")
+    logger.info(f"\nNext step: Run 'python3 combined_create_standalone_app.py' to generate web app")
     logger.info(f"{'='*50}")
 
 

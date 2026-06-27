@@ -1,8 +1,8 @@
 """
 Shared library for UK school data processing
 
-Contains common functions used by plot_schools.py and generate_school_data.py
-for loading, processing, geocoding, and analyzing school performance data.
+Contains common functions used by generate_school_data.py for loading,
+processing, geocoding, and analyzing school performance data.
 """
 
 import os

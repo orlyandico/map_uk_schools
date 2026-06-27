@@ -10,7 +10,7 @@ Pipeline:
   6. Calculate crime statistics (cached)
   7. Save processed CSV and caches
 
-Run this before ks2_create_standalone_app.py.
+Run this before combined_create_standalone_app.py.
 """
 
 import logging
@@ -110,7 +110,7 @@ def main():
     logger.info(f"  {output_csv}")
     logger.info(f"  {config['caching']['geocoding_cache_file']}")
     logger.info(f"  {config['caching']['crime_cache_file']}")
-    logger.info(f"\nNext step: python3 ks2_create_standalone_app.py")
+    logger.info(f"\nNext step: python3 combined_create_standalone_app.py")
     logger.info(f"{'='*50}")
 
 

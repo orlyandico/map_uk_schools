@@ -8,7 +8,7 @@ Reads:
   - config.json + ks2_config.json
 
 Emits:
-  - combined_school_finder.html
+  - school_finder.html
 
 Both pipelines' data prep logic is adapted from their single-pipeline counterparts.
 The HTML template uses marker shape to distinguish school types:
@@ -24,6 +24,7 @@ import argparse
 import pandas as pd
 
 import ks2_school_data_lib
+import times_ranking
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -98,6 +99,13 @@ def load_ks5_schools(csv_file, crime_cache, geocoding_cache):
 
     logger.info(f"Loaded {len(df)} KS5 schools from {csv_file}")
 
+    times = times_ranking.load_secondary()
+    if not times.loaded:
+        logger.warning(
+            f"Times secondary CSV ({times_ranking.SECONDARY_CSV}) not found; "
+            "skipping Times ranks for secondaries"
+        )
+
     schools = []
 
     for _, row in df.iterrows():
@@ -142,6 +150,9 @@ def load_ks5_schools(csv_file, crime_cache, geocoding_cache):
         if crime_stats:
             school["crime_stats"] = crime_stats
             school["crime_count"] = crime_count
+        times_rank = times.lookup(row.get("SCHNAME"), row.get("TOWN", ""))
+        if times_rank:
+            school["times_rank"] = times_rank
         schools.append(school)
 
     logger.info(f"Prepared {len(schools)} KS5 schools with coordinates")
@@ -160,6 +171,13 @@ def load_ks2_schools(csv_file, crime_cache, geocoding_cache, crime_radius_km):
         return []
 
     logger.info(f"Loaded {len(df)} KS2 schools from {csv_file}")
+
+    times = times_ranking.load_primary()
+    if not times.loaded:
+        logger.warning(
+            f"Times primary CSV ({times_ranking.PRIMARY_CSV}) not found; "
+            "skipping Times ranks for primaries"
+        )
 
     def build_addr(row):
         parts = []
@@ -213,6 +231,12 @@ def load_ks2_schools(csv_file, crime_cache, geocoding_cache, crime_radius_km):
         if crime_stats:
             school["crime_stats"] = crime_stats
             school["crime_count"] = crime_count
+        times_rank = times.lookup(
+            row.get("EstablishmentName") or row.get("school_name"),
+            row.get("Town", ""),
+        )
+        if times_rank:
+            school["times_rank"] = times_rank
         schools.append(school)
 
     logger.info(f"Prepared {len(schools)} KS2 schools with coordinates")
@@ -325,6 +349,7 @@ def get_html_template():
         .leaflet-popup-content { margin: 10px; min-width: 280px; max-width: 380px; font-size: 9pt; }
         .popup-header { font-weight: bold; font-size: 10pt; margin-bottom: 8px; color: #333; }
         .popup-subheader { font-size: 8pt; color: #888; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .popup-times-rank { font-weight: bold; font-size: 8pt; color: #555; margin-top: -4px; margin-bottom: 8px; }
         .popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
         .popup-section { display: flex; flex-direction: column; }
         .popup-section.full-width { grid-column: 1 / -1; }
@@ -533,6 +558,7 @@ def get_html_template():
             let html = `
                 <div class="popup-subheader">Secondary (KS5)</div>
                 <div class="popup-header">${school.SCHNAME}</div>
+                ${school.times_rank ? `<div class="popup-times-rank">Times Parent Power rank #${school.times_rank}</div>` : ''}
                 <div class="popup-grid">
                     <div class="popup-section full-width">
                         <div class="popup-label">Address</div>
@@ -635,6 +661,7 @@ def get_html_template():
             let html = `
                 <div class="popup-subheader">Primary (KS2)</div>
                 <div class="popup-header">${school.EstablishmentName || school.school_name}</div>
+                ${school.times_rank ? `<div class="popup-times-rank">Times Parent Power rank #${school.times_rank}</div>` : ''}
                 <div class="popup-grid">
                     <div class="popup-section full-width">
                         <div class="popup-label">Address</div>
@@ -837,7 +864,7 @@ def create_combined_html(
     ks2_crime_cache="ks2_crime_cache.json",
     ks2_geocoding_cache="ks2_geocoding_cache.json",
     ks2_config="ks2_config.json",
-    output_file="combined_school_finder.html",
+    output_file="school_finder.html",
 ):
     logger.info("Building combined KS2 + KS5 standalone HTML...")
 
@@ -923,7 +950,7 @@ def main():
     parser.add_argument("--ks2-crime-cache", default="ks2_crime_cache.json")
     parser.add_argument("--ks2-geocoding-cache", default="ks2_geocoding_cache.json")
     parser.add_argument("--ks2-config", default="ks2_config.json")
-    parser.add_argument("--output", default="combined_school_finder.html")
+    parser.add_argument("--output", default="school_finder.html")
     args = parser.parse_args()
 
     create_combined_html(

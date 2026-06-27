@@ -29,7 +29,7 @@ Column mapping from EES → school_data_lib.py:
   points_per_entry       → TALLPPE_ALEV_1618
   best_three_alevels_ppe → TB3PTSE
 
-Run once before generate_school_data.py / plot_schools.py.
+Run once before generate_school_data.py.
 """
 
 import argparse
@@ -393,7 +393,7 @@ def main():
     if all_ok:
         print("\nAll files ready. Next steps:")
         print("  python3 generate_school_data.py")
-        print("  python3 create_standalone_app.py")
+        print("  python3 combined_create_standalone_app.py  (after the KS2 pipeline too)")
     else:
         print("\nSome files need manual download. See instructions above.")
         sys.exit(1)

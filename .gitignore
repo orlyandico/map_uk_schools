@@ -16,3 +16,6 @@ geocoding_cache.json
 crime_cache.json
 *.log
 
+# Personal address lists (do not commit)
+addresses.txt
+
